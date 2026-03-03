@@ -75,6 +75,12 @@ cp "$SCRIPT_DIR/dashboard.sh" "$TARGET_DASHBOARD"
 chmod +x "$TARGET_DASHBOARD"
 success "Copied to $TARGET_DASHBOARD"
 
+# Create symlink so both statusline.sh and statusline-command.sh work.
+# Claude Code may save settings.json with either filename; the symlink
+# ensures the command resolves regardless of which name is configured.
+ln -sf statusline-command.sh "$CLAUDE_DIR/statusline.sh"
+info "Symlink: statusline.sh -> statusline-command.sh"
+
 # ── Step 5: Merge settings.json ──────────────────────────────────────────────
 STATUS_LINE_CONFIG='{"statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"}}'
 
