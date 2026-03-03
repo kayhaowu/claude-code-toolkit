@@ -92,8 +92,60 @@ printf '%b' "${SEP}"
 printf '%b' "${COLOR_PROJECT}${project_name}${RESET}"
 printf '\n'
 
-# ── Write session state for dashboard ─────────────────────────────────────────
+# ── Second line: other active sessions ────────────────────────────────────────
 SESSIONS_DIR="$HOME/.claude/sessions"
+if [ -d "$SESSIONS_DIR" ]; then
+    _now=$(date +%s)
+    _first=1
+    for _sf in "$SESSIONS_DIR"/*.json; do
+        [ -f "$_sf" ] || continue
+        _spid=$(jq -r '.pid // 0' "$_sf" 2>/dev/null)
+        # Skip current session
+        [ "$(( _spid + 0 ))" -eq "$(( PPID + 0 ))" ] 2>/dev/null && continue
+        # Skip dead processes and clean up stale file
+        kill -0 "$_spid" 2>/dev/null || { rm -f "$_sf"; continue; }
+        _oname=$(jq -r '.project_name // "?"' "$_sf" 2>/dev/null)
+        _opct=$(jq  -r '.used_pct     // 0'   "$_sf" 2>/dev/null)
+        _oout=$(jq  -r '.tokens_out   // 0'   "$_sf" 2>/dev/null)
+        _ostt=$(jq  -r '.status       // ""'  "$_sf" 2>/dev/null)
+        _oepoch=$(jq -r '.epoch       // 0'   "$_sf" 2>/dev/null)
+        _oage=$(( _now - _oepoch ))
+        # Determine display status
+        if [ -n "$_ostt" ] && [ "$_ostt" != "null" ] && [ "$_ostt" != "" ]; then
+            _ol=$(printf '%s' "$_ostt" | tr '[:lower:]' '[:upper:]')
+        elif [ "$_oage" -lt 4 ]; then
+            _ol="WORKING"
+        else
+            _ol="IDLE"
+        fi
+        # Format output tokens
+        if [ "$_oout" -ge 1000 ] 2>/dev/null; then
+            _oout_str=$(awk "BEGIN{printf \"%.1fk\",$_oout/1000}")
+        else
+            _oout_str="$_oout"
+        fi
+        # Status color
+        case "$_ol" in
+            WORKING*|THINKING*) _oc='\033[1;33m' ;;
+            WAITING*)           _oc='\033[2;37m' ;;
+            QUEUED*)            _oc='\033[1;35m' ;;
+            *)                  _oc='\033[1;32m' ;;
+        esac
+        # Truncate long project names
+        _oname=$(printf '%s' "$_oname" | cut -c1-14)
+        # Print prefix (first session) or separator
+        if [ "$_first" -eq 1 ]; then
+            printf '%b' '\033[2;37m↳ \033[0m'
+            _first=0
+        else
+            printf '%b' "${SEP}"
+        fi
+        printf '%b' "\033[32m${_oname}\033[0m \033[2;37m[\033[0m${_oc}${_ol}\033[0m \033[33m${_opct}%\033[0m \033[36m${_oout_str}\033[0m\033[2;37m]\033[0m"
+    done
+    [ "$_first" -eq 0 ] && printf '\n'
+fi
+
+# ── Write session state for dashboard ─────────────────────────────────────────
 if [ -d "$SESSIONS_DIR" ]; then
     _epoch=$(date +%s)
     _status=$(echo "$input" | jq -r '.session.status // .status // ""' 2>/dev/null) || _status=""
