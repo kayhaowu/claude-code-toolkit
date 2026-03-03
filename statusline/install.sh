@@ -16,7 +16,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 info()    { printf "${GREEN}[INFO]${NC}  %s\n" "$1"; }
-warn()    { printf "${YELLOW}[WARN]${NC}  %s\n" "$1"; }
+warn()    { printf "${YELLOW}[WARN]${NC}  %s\n" "$1" >&2; }
 error()   { printf "${RED}[ERROR]${NC} %s\n" "$1" >&2; exit 1; }
 success() { printf "${GREEN}[DONE]${NC}  %s\n" "$1"; }
 
@@ -75,8 +75,9 @@ if [ -f "$SETTINGS_FILE" ]; then
     info "Backing up existing settings.json to $SETTINGS_BACKUP..."
     cp "$SETTINGS_FILE" "$SETTINGS_BACKUP"
     info "Merging statusLine into existing settings.json..."
+    SETTINGS_TMP="${SETTINGS_FILE}.tmp"
     jq '. * {"statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"}}' \
-        "$SETTINGS_BACKUP" > "$SETTINGS_FILE"
+        "$SETTINGS_BACKUP" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
     success "Settings merged. Original backed up to $SETTINGS_BACKUP"
 else
     info "Creating $SETTINGS_FILE..."
