@@ -75,17 +75,47 @@ else
 fi
 
 # Assemble the status line with colors
-printf '%s' "${COLOR_MODEL}${model}${RESET}"
-printf '%s' "${SEP}"
-printf '%s' "[${COLOR_BAR_FILL}${filled_bar}${COLOR_BAR_EMPTY}${empty_bar}${RESET}]"
-printf '%s' "${SEP}"
-printf '%s' "${COLOR_PCT}${pct_str}${RESET}"
-printf '%s' "${SEP}"
-printf '%s' "${COLOR_TOKENS}${tokens_str} tokens${RESET}"
+# printf '%b' interprets \033 escape sequences (needed for ANSI colors) while
+# treating % in arguments as literal characters (safe from format injection).
+printf '%b' "${COLOR_MODEL}${model}${RESET}"
+printf '%b' "${SEP}"
+printf '%b' "[${COLOR_BAR_FILL}${filled_bar}${COLOR_BAR_EMPTY}${empty_bar}${RESET}]"
+printf '%b' "${SEP}"
+printf '%b' "${COLOR_PCT}${pct_str}${RESET}"
+printf '%b' "${SEP}"
+printf '%b' "${COLOR_TOKENS}${tokens_str} tokens${RESET}"
 if [ -n "$git_branch" ]; then
-    printf '%s' "${SEP}"
-    printf '%s' "${COLOR_BRANCH} ${git_branch}${RESET}"
+    printf '%b' "${SEP}"
+    printf '%b' "${COLOR_BRANCH} ${git_branch}${RESET}"
 fi
-printf '%s' "${SEP}"
-printf '%s' "${COLOR_PROJECT}${project_name}${RESET}"
+printf '%b' "${SEP}"
+printf '%b' "${COLOR_PROJECT}${project_name}${RESET}"
 printf '\n'
+
+# ── Write session state for dashboard ─────────────────────────────────────────
+SESSIONS_DIR="$HOME/.claude/sessions"
+if [ -d "$SESSIONS_DIR" ]; then
+    _epoch=$(date +%s)
+    _status=$(echo "$input" | jq -r '.session.status // .status // ""' 2>/dev/null) || _status=""
+    _activity=$(echo "$input" | jq -r '.last_message // .session.last_message // ""' 2>/dev/null) || _activity=""
+    _mem=$(ps -o rss= -p "$PPID" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
+    jq -n \
+        --arg pid    "$PPID" \
+        --arg epoch  "$_epoch" \
+        --arg model  "${model:-}" \
+        --arg pdir   "${project_dir:-}" \
+        --arg pname  "${project_name:-}" \
+        --arg branch "${git_branch:-}" \
+        --arg status "${_status:-}" \
+        --arg act    "${_activity:-}" \
+        --arg pct    "${pct_int:-0}" \
+        --arg tin    "${total_input:-0}" \
+        --arg tout   "${total_output:-0}" \
+        --arg mem    "${_mem:-0}" \
+        '{pid:($pid|tonumber),epoch:($epoch|tonumber),model:$model,
+          project_dir:$pdir,project_name:$pname,git_branch:$branch,
+          status:$status,last_activity:$act,
+          used_pct:($pct|tonumber),tokens_in:($tin|tonumber),
+          tokens_out:($tout|tonumber),mem_kb:($mem|tonumber)}' \
+        > "$SESSIONS_DIR/$PPID.json" 2>/dev/null || true
+fi

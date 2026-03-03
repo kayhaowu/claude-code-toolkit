@@ -6,6 +6,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 TARGET_SCRIPT="$CLAUDE_DIR/statusline-command.sh"
+TARGET_DASHBOARD="$CLAUDE_DIR/dashboard.sh"
+SESSIONS_DIR="$CLAUDE_DIR/sessions"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 SETTINGS_BACKUP="$CLAUDE_DIR/settings.json.backup"
 
@@ -58,15 +60,20 @@ else
     info "jq already installed: $(jq --version)"
 fi
 
-# ── Step 3: Create ~/.claude directory ───────────────────────────────────────
+# ── Step 3: Create ~/.claude directories ─────────────────────────────────────
 info "Creating $CLAUDE_DIR if needed..."
-mkdir -p "$CLAUDE_DIR"
+mkdir -p "$CLAUDE_DIR" "$SESSIONS_DIR"
 
-# ── Step 4: Copy statusline-command.sh ───────────────────────────────────────
+# ── Step 4: Copy scripts ──────────────────────────────────────────────────────
 info "Installing statusline-command.sh to $CLAUDE_DIR..."
 cp "$SCRIPT_DIR/statusline-command.sh" "$TARGET_SCRIPT"
 chmod +x "$TARGET_SCRIPT"
 success "Copied to $TARGET_SCRIPT"
+
+info "Installing dashboard.sh to $CLAUDE_DIR..."
+cp "$SCRIPT_DIR/dashboard.sh" "$TARGET_DASHBOARD"
+chmod +x "$TARGET_DASHBOARD"
+success "Copied to $TARGET_DASHBOARD"
 
 # ── Step 5: Merge settings.json ──────────────────────────────────────────────
 STATUS_LINE_CONFIG='{"statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"}}'
@@ -90,5 +97,6 @@ echo ""
 success "Installation complete!"
 info "Restart Claude Code to activate the status line."
 echo ""
+info "Multi-instance dashboard: sh ~/.claude/dashboard.sh"
 info "To customize colors, edit: $TARGET_SCRIPT"
 info "To uninstall, see: $SCRIPT_DIR/README.md"

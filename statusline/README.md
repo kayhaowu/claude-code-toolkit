@@ -78,6 +78,34 @@ cat > ~/.claude/settings.json << 'EOF'
 EOF
 ```
 
+## Dashboard（多實例監控）
+
+在獨立終端機執行，即時顯示所有 Claude Code session 的狀態：
+
+```bash
+sh ~/.claude/dashboard.sh
+```
+
+```
+Claude Code Dashboard  2026-03-03 17:58:58  (every 2s)
+
+PID      PROJECT            MODEL         STATUS    CONTEXT                     CTX%  OUTPUT   BRANCH
+------   ----------------   ------------  -------   ------------------------    ----  ------   ----------
+730419   sonic_docs         Opus 4.6      WORKING   [████████░░░░░░░░░░░░░░░░]  21%   2.6k     master
+  » Now I have everything I need. Let me write the final plan.
+582572   laas_agent         Opus 4.6      WORKING   [████████░░░░░░░░░░░░░░░░]  34%   10.2k    main
+26983    ubuntu             Opus 4.6      IDLE      [████░░░░░░░░░░░░░░░░░░░░]  14%   2.8k
+
+────────────────────────────────────────────────────────────────────────────────
+Instances: 3  Context: 128.4k  Output: 15.6k  Mem: 1.4G
+
+Status:  WORKING  IDLE  WAITING  QUEUED   » text  → tool  « user
+```
+
+每 2 秒自動更新，按 `Ctrl+C` 離開。
+
+**運作原理：** `statusline-command.sh` 每次被 Claude Code 呼叫時，會將 session 狀態寫入 `~/.claude/sessions/<PID>.json`，dashboard 讀取這些檔案並彙整顯示。
+
 ## 移除
 
 ```bash
@@ -94,6 +122,7 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 
 | 檔案 | 說明 |
 |------|------|
-| `install.sh` | 一鍵安裝腳本 |
+| `install.sh` | 一鍵安裝腳本（重複執行可升級至最新版本） |
 | `statusline-command.sh` | 狀態列腳本（安裝後複製至 `~/.claude/`） |
+| `dashboard.sh` | 多實例 Dashboard（安裝後複製至 `~/.claude/`） |
 | `README.md` | 本說明文件 |
