@@ -75,17 +75,17 @@ else
 fi
 
 # Assemble the status line with colors
-printf "${COLOR_MODEL}${model}${RESET}"
-printf "${SEP}"
-printf "[${COLOR_BAR_FILL}${filled_bar}${COLOR_BAR_EMPTY}${empty_bar}${RESET}]"
-printf "${SEP}"
-printf "${COLOR_PCT}${pct_str}${RESET}"
-printf "${SEP}"
-printf "${COLOR_TOKENS}${tokens_str} tokens${RESET}"
+printf '%s' "${COLOR_MODEL}${model}${RESET}"
+printf '%s' "${SEP}"
+printf '%s' "[${COLOR_BAR_FILL}${filled_bar}${COLOR_BAR_EMPTY}${empty_bar}${RESET}]"
+printf '%s' "${SEP}"
+printf '%s' "${COLOR_PCT}${pct_str}${RESET}"
+printf '%s' "${SEP}"
+printf '%s' "${COLOR_TOKENS}${tokens_str} tokens${RESET}"
 if [ -n "$git_branch" ]; then
-    printf "${SEP}"
-    printf "${COLOR_BRANCH} ${git_branch}${RESET}"
+    printf '%s' "${SEP}"
+    printf '%s' "${COLOR_BRANCH} ${git_branch}${RESET}"
 fi
-printf "${SEP}"
-printf "${COLOR_PROJECT}${project_name}${RESET}"
-printf "\n"
+printf '%s' "${SEP}"
+printf '%s' "${COLOR_PROJECT}${project_name}${RESET}"
+printf '\n'
