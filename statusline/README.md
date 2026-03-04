@@ -1,10 +1,10 @@
 # Claude Code Status Line
 
-自訂 Claude Code 底部狀態列，顯示模型、Context 使用量、Token 數、Git 分支與專案名稱。
+自訂 Claude Code 底部狀態列，顯示模型、Context 使用量、Token 數、費用、Git 分支與專案名稱。支援 5 種色彩主題。
 
 ```
-Claude Sonnet 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │  main │ my-project
-     紫色                  綠/灰              黃色      青色         藍色      綠色
+Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │ est $0.12 │  main │ my-project
+ 紫色            綠/灰              黃色      青色          黃色       藍色      綠色
 ```
 
 ## 支援系統
@@ -36,21 +36,60 @@ bash statusline/install.sh
 
 若 `settings.json` 已存在，原始檔案會備份為 `~/.claude/settings.json.backup`。
 
-## 自訂顏色
+## 主題（Themes）
 
-安裝後，編輯 `~/.claude/statusline-command.sh` 頂部的 `COLOR_*` 變數：
+內建 5 種色彩主題，透過環境變數 `CLAUDE_STATUSLINE_THEME` 選擇：
 
-```sh
-COLOR_MODEL='\033[35m'       # 紫色（模型名稱）
-COLOR_BAR_FILL='\033[32m'    # 綠色（進度條填滿）
-COLOR_BAR_EMPTY='\033[90m'   # 深灰（進度條空白）
-COLOR_PCT='\033[33m'         # 黃色（百分比）
-COLOR_TOKENS='\033[36m'      # 青色（Token 數）
-COLOR_BRANCH='\033[34m'      # 藍色（Git 分支）
-COLOR_PROJECT='\033[32m'     # 綠色（專案名稱）
+| 主題 | 說明 | 顏色類型 |
+|------|------|----------|
+| `ansi-default` | 預設主題，使用標準 ANSI 顏色 | 4-bit ANSI |
+| `catppuccin-mocha` | Catppuccin Mocha 色票，柔和粉彩風格 | 24-bit TrueColor |
+| `dracula` | Dracula 主題，高對比深色風格 | 24-bit TrueColor |
+| `nord` | Nord 主題，北極藍色調 | 24-bit TrueColor |
+| `none` | 無顏色，純文字輸出 | 無 |
+
+### 設定方式
+
+在 shell 設定檔（`~/.zshrc` 或 `~/.bashrc`）中加入：
+
+```bash
+export CLAUDE_STATUSLINE_THEME="catppuccin-mocha"
 ```
 
-ANSI 顏色代碼參考：`\033[30m`-`\033[37m`（標準），`\033[90m`-`\033[97m`（亮色）
+### NO_COLOR 支援
+
+設定 `NO_COLOR=1` 環境變數可完全停用所有 ANSI 顏色輸出（符合 [no-color.org](https://no-color.org) 標準）。`NO_COLOR` 優先於 `CLAUDE_STATUSLINE_THEME`。
+
+```bash
+export NO_COLOR=1
+```
+
+無顏色模式下，進度條使用 `=` 和 `.`，分隔符使用 `|`。
+
+### 新增顯示區段
+
+- **費用（Cost）**：顯示預估費用 `est $X.XX`，僅在費用 ≥ $0.005 時顯示
+- **200k 警告（Alert）**：當 Token 數超過 200k 時顯示 `⚠ 200k`
+- **Context % 顏色**：依使用率變色 — ≤60% 正常、60-80% 警告、>80% 危險
+
+### 12 語意色彩 Token
+
+每個主題定義 12 個語意色彩 Token：
+
+| Token | 用途 |
+|-------|------|
+| `C_MODEL` | 模型名稱 |
+| `C_BAR_FILL` | 進度條已填滿 |
+| `C_BAR_EMPTY` | 進度條未填滿 |
+| `C_CTX_OK` | Context % 正常（≤60%） |
+| `C_CTX_WARN` | Context % 警告（60-80%） |
+| `C_CTX_BAD` | Context % 危險（>80%） |
+| `C_TOKENS` | Token 數 |
+| `C_COST` | 費用 |
+| `C_ALERT` | 警告訊息 |
+| `C_BRANCH` | Git 分支 |
+| `C_PROJECT` | 專案名稱 |
+| `C_SEP` | 分隔符 |
 
 ## 手動安裝
 
