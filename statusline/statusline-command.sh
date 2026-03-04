@@ -113,7 +113,7 @@ if [ -d "$SESSIONS_DIR" ]; then
         # Determine display status
         if [ -n "$_ostt" ] && [ "$_ostt" != "null" ] && [ "$_ostt" != "" ]; then
             _ol=$(printf '%s' "$_ostt" | tr '[:lower:]' '[:upper:]')
-        elif [ "$_oage" -lt 4 ]; then
+        elif [ "$_oage" -lt 6 ]; then
             _ol="WORKING"
         else
             _ol="IDLE"
