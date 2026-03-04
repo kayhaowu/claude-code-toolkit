@@ -108,7 +108,7 @@ render() {
         age=$(( now - epoch ))
         if [ -n "$status_r" ] && [ "$status_r" != "null" ] && [ "$status_r" != "" ]; then
             disp_status="$status_r"
-        elif [ "$age" -lt 4 ]; then
+        elif [ "$age" -lt 6 ]; then
             disp_status="working"
         else
             disp_status="idle"
