@@ -6,6 +6,19 @@
 
 input=$(cat)
 
+# ── Resolve Claude process PID ──────────────────────────────────────────────
+# statusline-command.sh runs inside: claude → sh -c → sh statusline-command.sh
+# So $PPID points to the intermediate "sh -c" shell, NOT the claude process.
+# Walk up the process tree to find the actual claude PID.
+_claude_pid="$PPID"
+_parent=$(ps -o ppid= -p "$_claude_pid" 2>/dev/null | tr -d ' ')
+if [ -n "$_parent" ]; then
+    _pcomm=$(ps -o comm= -p "$_parent" 2>/dev/null | tr -d ' ')
+    if [ "$_pcomm" = "claude" ]; then
+        _claude_pid="$_parent"
+    fi
+fi
+
 # ── Theme Selection ──────────────────────────────────────────────────────────
 # Priority: NO_COLOR > CLAUDE_STATUSLINE_THEME > ansi-default
 
@@ -232,18 +245,22 @@ if [ -d "$SESSIONS_DIR" ]; then
     _first=1
     for _sf in "$SESSIONS_DIR"/*.json; do
         [ -f "$_sf" ] || continue
+        # Skip non-session files (e.g. .hb.json from old heartbeats)
+        case "$(basename "$_sf")" in *[!0-9.]* ) continue ;; esac
         _spid=$(jq -r '.pid // 0' "$_sf" 2>/dev/null)
         # Skip current session
-        [ "$(( _spid + 0 ))" -eq "$(( PPID + 0 ))" ] 2>/dev/null && continue
+        [ "$(( _spid + 0 ))" -eq "$(( _claude_pid + 0 ))" ] 2>/dev/null && continue
         # Skip dead processes and clean up stale file
         kill -0 "$_spid" 2>/dev/null || { rm -f "$_sf"; continue; }
         _oname=$(jq -r '.project_name // "?"' "$_sf" 2>/dev/null)
         _opct=$(jq  -r '.used_pct     // 0'   "$_sf" 2>/dev/null)
         _oout=$(jq  -r '.tokens_out   // 0'   "$_sf" 2>/dev/null)
         _ostt=$(jq  -r '.status       // ""'  "$_sf" 2>/dev/null)
+        # epoch = last statusline render (only updates when Claude is actively working)
         _oepoch=$(jq -r '.epoch       // 0'   "$_sf" 2>/dev/null)
         _oage=$(( _now - _oepoch ))
         # Determine display status
+        # epoch age > 6s means no UI renders = session is idle waiting for user prompt
         if [ -n "$_ostt" ] && [ "$_ostt" != "null" ] && [ "$_ostt" != "" ]; then
             _ol=$(printf '%s' "$_ostt" | tr '[:lower:]' '[:upper:]')
         elif [ "$_oage" -lt 6 ]; then
@@ -284,9 +301,22 @@ if [ -d "$SESSIONS_DIR" ]; then
     _epoch=$(date +%s)
     _status=$(echo "$input" | jq -r '.session.status // .status // ""' 2>/dev/null) || _status=""
     _activity=$(echo "$input" | jq -r '.last_message // .session.last_message // ""' 2>/dev/null) || _activity=""
-    _mem=$(ps -o rss= -p "$PPID" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
+    _mem=$(ps -o rss= -p "$_claude_pid" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
+    # Detect idle: if output tokens haven't changed since last render, session is idle
+    _prev_tout=0
+    _sf="$SESSIONS_DIR/$_claude_pid.json"
+    if [ -f "$_sf" ]; then
+        _prev_tout=$(jq -r '.tokens_out // 0' "$_sf" 2>/dev/null) || _prev_tout=0
+    fi
+    if [ -z "$_status" ] || [ "$_status" = "null" ]; then
+        if [ "${total_output:-0}" -gt "$_prev_tout" ] 2>/dev/null; then
+            _status="working"
+        else
+            _status="idle"
+        fi
+    fi
     jq -n \
-        --arg pid    "$PPID" \
+        --arg pid    "$_claude_pid" \
         --arg epoch  "$_epoch" \
         --arg model  "${model:-}" \
         --arg pdir   "${project_dir:-}" \
@@ -305,5 +335,5 @@ if [ -d "$SESSIONS_DIR" ]; then
           used_pct:($pct|tonumber),tokens_in:($tin|tonumber),
           tokens_out:($tout|tonumber),mem_kb:($mem|tonumber),
           cost_usd:($cost|tonumber)}' \
-        > "$SESSIONS_DIR/$PPID.json" 2>/dev/null || true
+        > "$_sf" 2>/dev/null || true
 fi

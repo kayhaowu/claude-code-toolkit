@@ -10,6 +10,7 @@ set -e
 TARGET_PID="${1:?Usage: heartbeat.sh <pid>}"
 SESSIONS_DIR="$HOME/.claude/sessions"
 SESSION_FILE="$SESSIONS_DIR/$TARGET_PID.json"
+HB_FILE="$SESSIONS_DIR/$TARGET_PID.hb.dat"
 PIDFILE="$SESSIONS_DIR/$TARGET_PID.hb.pid"
 INTERVAL=2
 
@@ -28,7 +29,7 @@ echo $$ > "$PIDFILE"
 
 # ── Cleanup on exit ──────────────────────────────────────────────────────────
 cleanup() {
-    rm -f "$PIDFILE"
+    rm -f "$PIDFILE" "$HB_FILE"
     # If parent is dead, remove stale session file too
     if ! kill -0 "$TARGET_PID" 2>/dev/null; then
         rm -f "$SESSION_FILE"
@@ -43,16 +44,11 @@ while true; do
         exit 0
     fi
 
-    # Update session JSON if it exists
-    if [ -f "$SESSION_FILE" ]; then
-        _epoch=$(date +%s)
-        _mem=$(ps -o rss= -p "$TARGET_PID" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
-        _tmp="$SESSION_FILE.hb.tmp"
-        jq --arg epoch "$_epoch" --arg mem "$_mem" \
-            '.epoch = ($epoch | tonumber) | .mem_kb = ($mem | tonumber)' \
-            "$SESSION_FILE" > "$_tmp" 2>/dev/null && mv "$_tmp" "$SESSION_FILE" \
-            || rm -f "$_tmp"
-    fi
+    # Write heartbeat to a SEPARATE file to avoid race conditions with statusline-command.sh.
+    # statusline-command.sh owns the main .json; heartbeat owns .hb.dat.
+    _hb=$(date +%s)
+    _mem=$(ps -o rss= -p "$TARGET_PID" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
+    printf '{"heartbeat_at":%s,"mem_kb":%s}\n' "$_hb" "$_mem" > "$HB_FILE" 2>/dev/null || true
 
     sleep "$INTERVAL"
 done
