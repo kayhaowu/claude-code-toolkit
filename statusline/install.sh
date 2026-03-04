@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 TARGET_SCRIPT="$CLAUDE_DIR/statusline-command.sh"
 TARGET_DASHBOARD="$CLAUDE_DIR/dashboard.sh"
+TARGET_HEARTBEAT="$CLAUDE_DIR/heartbeat.sh"
 SESSIONS_DIR="$CLAUDE_DIR/sessions"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 SETTINGS_BACKUP="$CLAUDE_DIR/settings.json.backup"
@@ -75,6 +76,11 @@ cp "$SCRIPT_DIR/dashboard.sh" "$TARGET_DASHBOARD"
 chmod +x "$TARGET_DASHBOARD"
 success "Copied to $TARGET_DASHBOARD"
 
+info "Installing heartbeat.sh to $CLAUDE_DIR..."
+cp "$SCRIPT_DIR/heartbeat.sh" "$TARGET_HEARTBEAT"
+chmod +x "$TARGET_HEARTBEAT"
+success "Copied to $TARGET_HEARTBEAT"
+
 # Create symlink so both statusline.sh and statusline-command.sh work.
 # Claude Code may save settings.json with either filename; the symlink
 # ensures the command resolves regardless of which name is configured.
@@ -89,12 +95,23 @@ if [ -f "$SETTINGS_FILE" ]; then
     cp "$SETTINGS_FILE" "$SETTINGS_BACKUP"
     info "Merging statusLine into existing settings.json..."
     SETTINGS_TMP="${SETTINGS_FILE}.tmp"
-    jq '. * {"statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"}}' \
-        "$SETTINGS_BACKUP" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+    jq '. * {
+        "statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"},
+        "hooks": (.hooks // {} | . * {
+            "SessionStart": [{"hooks":[{"type":"command","command":"nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &"}]}],
+            "SessionEnd": [{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
+        })
+    }' "$SETTINGS_BACKUP" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
     success "Settings merged. Original backed up to $SETTINGS_BACKUP"
 else
     info "Creating $SETTINGS_FILE..."
-    printf '%s\n' "$STATUS_LINE_CONFIG" | jq '.' > "$SETTINGS_FILE"
+    jq -n '{
+        "statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"},
+        "hooks":{
+            "SessionStart":[{"hooks":[{"type":"command","command":"nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &"}]}],
+            "SessionEnd":[{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
+        }
+    }' > "$SETTINGS_FILE"
     success "Settings file created."
 fi
 
