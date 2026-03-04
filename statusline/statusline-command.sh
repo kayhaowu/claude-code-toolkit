@@ -246,7 +246,7 @@ if [ -d "$SESSIONS_DIR" ]; then
     for _sf in "$SESSIONS_DIR"/*.json; do
         [ -f "$_sf" ] || continue
         # Skip non-session files (e.g. .hb.json from old heartbeats)
-        case "$(basename "$_sf")" in *[!0-9.]* ) continue ;; esac
+        case "$(basename "$_sf" .json)" in *[!0-9]* ) continue ;; esac
         _spid=$(jq -r '.pid // 0' "$_sf" 2>/dev/null)
         # Skip current session
         [ "$(( _spid + 0 ))" -eq "$(( _claude_pid + 0 ))" ] 2>/dev/null && continue
