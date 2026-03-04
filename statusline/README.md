@@ -68,7 +68,7 @@ export NO_COLOR=1
 
 ### 新增顯示區段
 
-- **費用（Cost）**：顯示預估費用 `est $X.XX`，僅在費用 ≥ $0.005 時顯示
+- **費用（Cost）**：顯示預估 API 費用 `est $X.XX`，**預設關閉**（訂閱制用戶不需要）。API 計費用戶可設定 `export CLAUDE_STATUSLINE_SHOW_COST=1` 開啟
 - **200k 警告（Alert）**：當 Token 數超過 200k 時顯示 `⚠ 200k`
 - **Context % 顏色**：依使用率變色 — ≤60% 正常、60-80% 警告、>80% 危險
 

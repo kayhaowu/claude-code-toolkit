@@ -183,13 +183,15 @@ else
     tokens_str="${tokens_used}"
 fi
 
-# ── Format cost (only shown when >= $0.005) ──────────────────────────────────
+# ── Format cost (off by default; set CLAUDE_STATUSLINE_SHOW_COST=1 to enable) ─
 
 cost_str=""
-if [ -n "$cost_usd" ] && [ "$cost_usd" != "0" ] && [ "$cost_usd" != "null" ]; then
-    _show_cost=$(awk "BEGIN { print ($cost_usd >= 0.005) ? 1 : 0 }")
-    if [ "$_show_cost" -eq 1 ]; then
-        cost_str=$(awk "BEGIN { printf \"est \$%.2f\", $cost_usd }")
+if [ "${CLAUDE_STATUSLINE_SHOW_COST:-0}" = "1" ]; then
+    if [ -n "$cost_usd" ] && [ "$cost_usd" != "0" ] && [ "$cost_usd" != "null" ]; then
+        _show_cost=$(awk "BEGIN { print ($cost_usd >= 0.005) ? 1 : 0 }")
+        if [ "$_show_cost" -eq 1 ]; then
+            cost_str=$(awk "BEGIN { printf \"est \$%.2f\", $cost_usd }")
+        fi
     fi
 fi
 
