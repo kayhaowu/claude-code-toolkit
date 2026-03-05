@@ -8,6 +8,7 @@ CLAUDE_DIR="$HOME/.claude"
 TARGET_SCRIPT="$CLAUDE_DIR/statusline-command.sh"
 TARGET_DASHBOARD="$CLAUDE_DIR/dashboard.sh"
 TARGET_HEARTBEAT="$CLAUDE_DIR/heartbeat.sh"
+TARGET_TMUX="$CLAUDE_DIR/tmux-sessions.sh"
 SESSIONS_DIR="$CLAUDE_DIR/sessions"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 SETTINGS_BACKUP="$CLAUDE_DIR/settings.json.backup"
@@ -81,6 +82,11 @@ cp "$SCRIPT_DIR/heartbeat.sh" "$TARGET_HEARTBEAT"
 chmod +x "$TARGET_HEARTBEAT"
 success "Copied to $TARGET_HEARTBEAT"
 
+info "Installing tmux-sessions.sh to $CLAUDE_DIR..."
+cp "$SCRIPT_DIR/tmux-sessions.sh" "$TARGET_TMUX"
+chmod +x "$TARGET_TMUX"
+success "Copied to $TARGET_TMUX"
+
 # Create symlink so both statusline.sh and statusline-command.sh work.
 # Claude Code may save settings.json with either filename; the symlink
 # ensures the command resolves regardless of which name is configured.
@@ -99,7 +105,7 @@ if [ -f "$SETTINGS_FILE" ]; then
         "statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"},
         "hooks": (.hooks // {} | . * {
             "SessionStart": [{"hooks":[{"type":"command","command":"nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &"}]}],
-            "SessionEnd": [{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
+            "SessionEnd": [{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.dat ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
         })
     }' "$SETTINGS_BACKUP" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
     success "Settings merged. Original backed up to $SETTINGS_BACKUP"
@@ -109,10 +115,26 @@ else
         "statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"},
         "hooks":{
             "SessionStart":[{"hooks":[{"type":"command","command":"nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &"}]}],
-            "SessionEnd":[{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
+            "SessionEnd":[{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.dat ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
         }
     }' > "$SETTINGS_FILE"
     success "Settings file created."
+fi
+
+# ── Step 6: Configure tmux (optional) ────────────────────────────────────────
+if command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
+    info "tmux detected. Setting up real-time session monitor on status bar line 2..."
+    tmux set-option -g status 2
+    tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)"
+    tmux set-option -g status-interval 2
+    success "tmux session monitor enabled (updates every 2s)."
+    info "To disable: tmux set-option -g status 1"
+else
+    info "tmux not detected or not inside a tmux session."
+    info "To enable real-time session monitor, run inside tmux:"
+    info "  tmux set-option -g status 2"
+    info "  tmux set-option -g status-format[1] \"#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)\""
+    info "  tmux set-option -g status-interval 2"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -121,5 +143,6 @@ success "Installation complete!"
 info "Restart Claude Code to activate the status line."
 echo ""
 info "Multi-instance dashboard: sh ~/.claude/dashboard.sh"
+info "Real-time tmux monitor: automatic if inside tmux, or run commands above"
 info "To customize colors, edit: $TARGET_SCRIPT"
 info "To uninstall, see: $SCRIPT_DIR/README.md"

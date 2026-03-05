@@ -237,65 +237,7 @@ printf '%b' "${SEP}"
 printf '%b' "${C_PROJECT}${project_name}${C_RESET}"
 printf '\n'
 
-# ── Second line: other active sessions ───────────────────────────────────────
-
-SESSIONS_DIR="$HOME/.claude/sessions"
-if [ -d "$SESSIONS_DIR" ]; then
-    _now=$(date +%s)
-    _first=1
-    for _sf in "$SESSIONS_DIR"/*.json; do
-        [ -f "$_sf" ] || continue
-        # Skip non-session files (e.g. .hb.json from old heartbeats)
-        case "$(basename "$_sf" .json)" in *[!0-9]* ) continue ;; esac
-        _spid=$(jq -r '.pid // 0' "$_sf" 2>/dev/null)
-        # Skip current session
-        [ "$(( _spid + 0 ))" -eq "$(( _claude_pid + 0 ))" ] 2>/dev/null && continue
-        # Skip dead processes and clean up stale file
-        kill -0 "$_spid" 2>/dev/null || { rm -f "$_sf"; continue; }
-        _oname=$(jq -r '.project_name // "?"' "$_sf" 2>/dev/null)
-        _opct=$(jq  -r '.used_pct     // 0'   "$_sf" 2>/dev/null)
-        _oout=$(jq  -r '.tokens_out   // 0'   "$_sf" 2>/dev/null)
-        _ostt=$(jq  -r '.status       // ""'  "$_sf" 2>/dev/null)
-        # epoch = last statusline render (only updates when Claude is actively working)
-        _oepoch=$(jq -r '.epoch       // 0'   "$_sf" 2>/dev/null)
-        _oage=$(( _now - _oepoch ))
-        # Determine display status
-        # epoch age > 6s means no UI renders = session is idle waiting for user prompt
-        if [ -n "$_ostt" ] && [ "$_ostt" != "null" ] && [ "$_ostt" != "" ]; then
-            _ol=$(printf '%s' "$_ostt" | tr '[:lower:]' '[:upper:]')
-        elif [ "$_oage" -lt 6 ]; then
-            _ol="WORKING"
-        else
-            _ol="IDLE"
-        fi
-        # Format output tokens
-        if [ "$_oout" -ge 1000 ] 2>/dev/null; then
-            _oout_str=$(awk "BEGIN{printf \"%.1fk\",$_oout/1000}")
-        else
-            _oout_str="$_oout"
-        fi
-        # Status color using theme tokens
-        case "$_ol" in
-            WORKING*|THINKING*) _oc="$C_CTX_WARN" ;;
-            WAITING*)           _oc="$C_SEP" ;;
-            QUEUED*)            _oc="$C_MODEL" ;;
-            *)                  _oc="$C_CTX_OK" ;;
-        esac
-        # Truncate long project names
-        _oname=$(printf '%s' "$_oname" | cut -c1-14)
-        # Print prefix (first session) or separator
-        if [ "$_first" -eq 1 ]; then
-            printf '%b' "${C_SEP}↳ ${C_RESET}"
-            _first=0
-        else
-            printf '%b' "${SEP}"
-        fi
-        printf '%b' "${C_PROJECT}${_oname}${C_RESET} ${C_SEP}[${C_RESET}${_oc}${_ol}${C_RESET} ${C_CTX_WARN}${_opct}%${C_RESET} ${C_TOKENS}${_oout_str}${C_RESET}${C_SEP}]${C_RESET}"
-    done
-    [ "$_first" -eq 0 ] && printf '\n'
-fi
-
-# ── Write session state for dashboard ────────────────────────────────────────
+# ── Write session state for tmux/dashboard ────────────────────────────────────
 
 if [ -d "$SESSIONS_DIR" ]; then
     _epoch=$(date +%s)
