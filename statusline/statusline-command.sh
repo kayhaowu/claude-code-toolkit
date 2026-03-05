@@ -239,6 +239,7 @@ printf '\n'
 
 # ── Write session state for tmux/dashboard ────────────────────────────────────
 
+SESSIONS_DIR="$HOME/.claude/sessions"
 if [ -d "$SESSIONS_DIR" ]; then
     _epoch=$(date +%s)
     _status=$(echo "$input" | jq -r '.session.status // .status // ""' 2>/dev/null) || _status=""
