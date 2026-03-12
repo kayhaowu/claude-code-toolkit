@@ -32,7 +32,9 @@ echo $$ > "$PIDFILE"
 # won't have a JSON file until the first render. Create a minimal one so
 # tmux-sessions.sh can discover the session immediately.
 if [ ! -f "$SESSION_FILE" ]; then
-    _cwd=$(readlink -f "/proc/$TARGET_PID/cwd" 2>/dev/null) || _cwd=""
+    _cwd=$(readlink -f "/proc/$TARGET_PID/cwd" 2>/dev/null) \
+        || _cwd=$(lsof -a -p "$TARGET_PID" -d cwd -Fn 2>/dev/null | grep '^n' | cut -c2-) \
+        || _cwd=""
     _pname=$(basename "${_cwd:-unknown}")
     _epoch=$(date +%s)
     printf '{"pid":%s,"epoch":%s,"model":"","project_dir":"%s","project_name":"%s","git_branch":"","status":"idle","last_activity":"","used_pct":0,"tokens_in":0,"tokens_out":0,"mem_kb":0,"cost_usd":0}\n' \
