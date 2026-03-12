@@ -140,6 +140,8 @@ fi
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 success "Installation complete!"
+_installed_ver=$(sh "$TARGET_SCRIPT" --version 2>/dev/null || echo "unknown")
+info "Version: $_installed_ver"
 info "Restart Claude Code to activate the status line."
 echo ""
 info "Multi-instance dashboard: sh ~/.claude/dashboard.sh"

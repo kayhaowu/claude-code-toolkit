@@ -4,6 +4,9 @@
 # Themes: ansi-default, catppuccin-mocha, dracula, nord, none
 # Set CLAUDE_STATUSLINE_THEME to choose theme. Set NO_COLOR=1 to disable colors.
 
+VERSION="1.0.0"
+if [ "${1:-}" = "--version" ]; then echo "$VERSION"; exit 0; fi
+
 input=$(cat)
 
 # ── Resolve Claude process PID ──────────────────────────────────────────────
