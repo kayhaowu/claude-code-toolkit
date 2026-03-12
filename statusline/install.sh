@@ -94,30 +94,47 @@ ln -sf statusline-command.sh "$CLAUDE_DIR/statusline.sh"
 info "Symlink: statusline.sh -> statusline-command.sh"
 
 # ── Step 5: Merge settings.json ──────────────────────────────────────────────
-STATUS_LINE_CONFIG='{"statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"}}'
+STATUSLINE_CONFIG='{"type":"command","command":"sh ~/.claude/statusline-command.sh"}'
+HB_START_CMD='nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &'
+HB_STOP_CMD="sh -c 'kill \$(cat ~/.claude/sessions/\$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/\$PPID.json ~/.claude/sessions/\$PPID.hb.dat ~/.claude/sessions/\$PPID.hb.pid'"
 
 if [ -f "$SETTINGS_FILE" ]; then
     info "Backing up existing settings.json to $SETTINGS_BACKUP..."
     cp "$SETTINGS_FILE" "$SETTINGS_BACKUP"
     info "Merging statusLine into existing settings.json..."
-    SETTINGS_TMP="${SETTINGS_FILE}.tmp"
-    jq '. * {
-        "statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"},
-        "hooks": (.hooks // {} | . * {
-            "SessionStart": [{"hooks":[{"type":"command","command":"nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &"}]}],
-            "SessionEnd": [{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.dat ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
-        })
-    }' "$SETTINGS_BACKUP" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-    success "Settings merged. Original backed up to $SETTINGS_BACKUP"
 else
     info "Creating $SETTINGS_FILE..."
-    jq -n '{
-        "statusLine":{"type":"command","command":"sh ~/.claude/statusline-command.sh"},
-        "hooks":{
-            "SessionStart":[{"hooks":[{"type":"command","command":"nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &"}]}],
-            "SessionEnd":[{"hooks":[{"type":"command","command":"sh -c '\''kill $(cat ~/.claude/sessions/$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/$PPID.json ~/.claude/sessions/$PPID.hb.dat ~/.claude/sessions/$PPID.hb.pid'\''"}]}]
-        }
-    }' > "$SETTINGS_FILE"
+    echo '{}' > "$SETTINGS_FILE"
+fi
+
+# Merge statusLine key
+SETTINGS_TMP="${SETTINGS_FILE}.tmp"
+jq --argjson sl "$STATUSLINE_CONFIG" '.statusLine = $sl' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+
+# Append hooks (skip if already present)
+_has_hb_start=$(jq -r '(.hooks.SessionStart // [])[] | .hooks[]? | .command // "" | test("heartbeat\\.sh")' "$SETTINGS_FILE" 2>/dev/null | grep -c true || true)
+if [ "$_has_hb_start" -eq 0 ]; then
+    jq --arg cmd "$HB_START_CMD" '
+        .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":$cmd}]}])
+    ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+    info "SessionStart hook added."
+else
+    info "SessionStart hook already exists, skipping."
+fi
+
+_has_hb_stop=$(jq -r '(.hooks.SessionEnd // [])[] | .hooks[]? | .command // "" | test("sessions/\\$PPID")' "$SETTINGS_FILE" 2>/dev/null | grep -c true || true)
+if [ "$_has_hb_stop" -eq 0 ]; then
+    jq --arg cmd "$HB_STOP_CMD" '
+        .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":$cmd}]}])
+    ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+    info "SessionEnd hook added."
+else
+    info "SessionEnd hook already exists, skipping."
+fi
+
+if [ -f "$SETTINGS_BACKUP" ]; then
+    success "Settings merged. Original backed up to $SETTINGS_BACKUP"
+else
     success "Settings file created."
 fi
 
