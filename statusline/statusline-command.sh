@@ -194,7 +194,7 @@ fi
 # ── Format tokens ────────────────────────────────────────────────────────────
 
 if [ "$tokens_used" -ge 1000 ] 2>/dev/null; then
-    tokens_str=$(awk "BEGIN { printf \"%.1fk\", $tokens_used/1000 }")
+    tokens_str=$(awk -v n="$tokens_used" 'BEGIN { printf "%.1fk", n/1000 }')
 else
     tokens_str="${tokens_used}"
 fi
@@ -204,9 +204,9 @@ fi
 cost_str=""
 if [ "${CLAUDE_STATUSLINE_SHOW_COST:-0}" = "1" ]; then
     if [ -n "$cost_usd" ] && [ "$cost_usd" != "0" ] && [ "$cost_usd" != "null" ]; then
-        _show_cost=$(awk "BEGIN { print ($cost_usd >= 0.005) ? 1 : 0 }")
+        _show_cost=$(awk -v c="$cost_usd" 'BEGIN { print (c >= 0.005) ? 1 : 0 }')
         if [ "$_show_cost" -eq 1 ]; then
-            cost_str=$(awk "BEGIN { printf \"est \$%.2f\", $cost_usd }")
+            cost_str=$(awk -v c="$cost_usd" 'BEGIN { printf "est $%.2f", c }')
         fi
     fi
 fi

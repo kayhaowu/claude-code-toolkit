@@ -31,9 +31,9 @@ C_QUEUED='\033[1;35m'  # Bold magenta — QUEUED status
 fmt_k() {
     n="$1"
     if [ "$n" -ge 1000000 ] 2>/dev/null; then
-        awk "BEGIN{printf \"%.1fM\",$n/1000000}"
+        awk -v v="$n" 'BEGIN{printf "%.1fM",v/1000000}'
     elif [ "$n" -ge 1000 ] 2>/dev/null; then
-        awk "BEGIN{printf \"%.1fk\",$n/1000}"
+        awk -v v="$n" 'BEGIN{printf "%.1fk",v/1000}'
     else
         printf '%s' "$n"
     fi
@@ -42,9 +42,9 @@ fmt_k() {
 fmt_mem() {
     kb="$1"
     if [ "$kb" -ge 1048576 ] 2>/dev/null; then
-        awk "BEGIN{printf \"%.1fG\",$kb/1048576}"
+        awk -v v="$kb" 'BEGIN{printf "%.1fG",v/1048576}'
     elif [ "$kb" -ge 1024 ] 2>/dev/null; then
-        awk "BEGIN{printf \"%.1fM\",$kb/1024}"
+        awk -v v="$kb" 'BEGIN{printf "%.1fM",v/1024}'
     else
         printf '%s' "${kb}K"
     fi
