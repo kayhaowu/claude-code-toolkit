@@ -6,12 +6,23 @@ Prepare the claude-code-toolkit project for public release on GitHub, targeting 
 
 ## Scope
 
-11 changes, each as an independent commit with clean git history.
+11 changes in sequential order (some have implicit dependencies). Each change is a separate commit.
+
+## Commit Order
+
+Steps must be executed in numbered order:
+1. Git history rewrite (must be first — rewrites all hashes)
+2–4. Infrastructure (.gitignore, LICENSE, version) — independent of each other but after step 1
+5–7. Bug fixes — independent of each other
+8. Uninstall script (references files from step 7's fixed install.sh)
+9–10. Doc cleanup — independent
+11. README internationalization (must be last — references final state of all files)
 
 ---
 
 ## 1. Git History Rewrite
 
+- Create a backup branch `backup/pre-rewrite` before the operation
 - Rewrite all 28 commits: author/committer from `kay_wu <kay_wu@edge-core.com>` to `kayhaowu <ak0789456@gmail.com>`
 - Use `git filter-repo` (repo-local only, no global config changes)
 - Remove old GitLab origin
@@ -27,6 +38,8 @@ Prepare the claude-code-toolkit project for public release on GitHub, targeting 
 *~
 ```
 
+Note: `.claude/` in the repo root (currently untracked) will be ignored — this is intentional, it contains local settings.
+
 ## 3. Add MIT LICENSE
 
 - License: MIT
@@ -35,23 +48,30 @@ Prepare the claude-code-toolkit project for public release on GitHub, targeting 
 ## 4. Version Tracking
 
 - Add `VERSION="1.0.0"` constant at top of `statusline/statusline-command.sh`
-- Support `--version` flag: `sh statusline-command.sh --version` prints version
-- `install.sh` displays version on completion
+- **`--version` must be checked before `input=$(cat)`** to avoid blocking on stdin:
+  ```sh
+  VERSION="1.0.0"
+  if [ "${1:-}" = "--version" ]; then echo "$VERSION"; exit 0; fi
+  input=$(cat)
+  ```
+- `install.sh` displays version on completion (read from the installed script)
 
 ## 5. Fix Cross-Platform Bug — `heartbeat.sh`
 
-**Problem:** `readlink -f "/proc/$TARGET_PID/cwd"` fails silently on macOS (no `/proc`).
+**Problem:** `readlink -f "/proc/$TARGET_PID/cwd"` fails on macOS — both because `/proc` doesn't exist and because macOS `readlink` doesn't support `-f`.
 
-**Fix:** Add `lsof` fallback:
+**Fix:** Linux path via `/proc`, macOS path via `lsof`:
 ```sh
 _cwd=$(readlink -f "/proc/$TARGET_PID/cwd" 2>/dev/null) \
   || _cwd=$(lsof -a -p "$TARGET_PID" -d cwd -Fn 2>/dev/null | grep '^n' | cut -c2-) \
   || _cwd=""
 ```
 
+The `readlink` branch is Linux-only; the `lsof` branch is the macOS codepath.
+
 ## 6. Fix awk Command Injection — `statusline-command.sh` + `dashboard.sh`
 
-**Problem:** Variables like `$tokens_used`, `$cost_usd` are interpolated directly into awk BEGIN blocks.
+**Problem:** Variables are interpolated directly into awk BEGIN blocks.
 
 **Fix:** Use awk `-v` parameter for safe variable passing:
 ```sh
@@ -61,9 +81,18 @@ tokens_str=$(awk "BEGIN { printf \"%.1fk\", $tokens_used/1000 }")
 tokens_str=$(awk -v n="$tokens_used" 'BEGIN { printf "%.1fk", n/1000 }')
 ```
 
-Apply to all awk calls in:
-- `statusline-command.sh`: `tokens_str`, `cost_str`, `_show_cost`
-- `dashboard.sh`: `fmt_k()`, `fmt_mem()`
+**Complete inventory of vulnerable awk calls (6 total):**
+
+`statusline-command.sh` (3 calls):
+1. Line 194: `tokens_str` formatting (`$tokens_used`)
+2. Line 204: `_show_cost` threshold check (`$cost_usd`)
+3. Line 206: `cost_str` formatting (`$cost_usd`)
+
+`dashboard.sh` (4 calls):
+1. Line 34: `fmt_k()` — million formatting (`$n`)
+2. Line 36: `fmt_k()` — thousand formatting (`$n`)
+3. Line 45: `fmt_mem()` — GB formatting (`$kb`)
+4. Line 47: `fmt_mem()` — MB formatting (`$kb`)
 
 ## 7. Fix `install.sh` Hooks Overwrite
 
@@ -74,17 +103,23 @@ Apply to all awk calls in:
 2. **hooks exist but don't contain our hook** — append to array
 3. **hooks already contain our hook** (reinstall) — skip, don't duplicate
 
-Detection: check if hook command string contains `heartbeat.sh` or `sessions/$PPID`.
+Detection: check if hook command string contains the **literal** string `heartbeat.sh` (for SessionStart) or `sessions/$PPID` (for SessionEnd). These are literal strings stored in JSON, not expanded shell variables.
 
 ## 8. Add `statusline/uninstall.sh`
 
 Features:
-1. Kill running heartbeat daemons
-2. Clean session files (`~/.claude/sessions/*.json`, `*.hb.*`)
-3. Remove installed scripts (`~/.claude/statusline-command.sh`, `statusline.sh`, `dashboard.sh`, `heartbeat.sh`, `tmux-sessions.sh`)
+1. Kill running heartbeat daemons (find PIDs from `~/.claude/sessions/*.hb.pid`)
+2. Clean session files: `*.json`, `*.hb.dat`, `*.hb.pid` in `~/.claude/sessions/`
+3. Remove installed scripts: `~/.claude/statusline-command.sh`, `~/.claude/statusline.sh` (symlink), `~/.claude/dashboard.sh`, `~/.claude/heartbeat.sh`, `~/.claude/tmux-sessions.sh`
 4. Remove `statusLine` key from `~/.claude/settings.json`
-5. Remove only our hooks (entries containing `heartbeat.sh` or `sessions/$PPID`) from settings.json; if array becomes empty, remove the key; if `hooks` object becomes empty, remove it
-6. Print suggestion for user to manually restore tmux settings (do NOT auto-revert)
+5. Remove only our hooks (entries with command containing literal `heartbeat.sh` or `sessions/$PPID`) from settings.json; if array becomes empty, remove the key; if `hooks` object becomes empty, remove it
+6. Print tmux restore suggestion with exact commands:
+   ```
+   If you were using tmux integration, run:
+     tmux set-option -g status 1
+     tmux set-option -gu status-format[1]
+   ```
+7. Each step prints status: removed / not found (skipped)
 
 **Not copied to `~/.claude/`** — users run from cloned repo or re-clone to uninstall.
 
@@ -126,20 +161,44 @@ The 6 Chinese design files in `docs/plans/` are kept as-is (no translation neede
 ### Root `README.md` English structure:
 ```
 # Claude Code Toolkit
-> One-liner tagline
+> A collection of tools and utilities for enhancing the Claude Code CLI experience.
 
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
 ## Features
+- Custom status line (model, context bar, tokens, cost, git branch, project)
+- 5 color themes + NO_COLOR support
+- Multi-instance dashboard
+- tmux real-time session monitor
+- One-click installer (macOS, Ubuntu/Debian, CentOS/RHEL)
+
 ## Quick Start
+bash statusline/install.sh
+
 ## Themes
+(table of 5 themes with descriptions)
+
 ## Dashboard
+(usage + screenshot example)
+
 ## tmux Integration
-## Configuration (env vars: SHOW_COST, THEME, NO_COLOR)
+(automatic setup + manual commands)
+
+## Configuration
+(CLAUDE_STATUSLINE_THEME, CLAUDE_STATUSLINE_SHOW_COST, NO_COLOR)
+
 ## Uninstall
-## Contributing (brief)
+bash statusline/uninstall.sh
+(+ manual steps reference)
+
+## Contributing
+Brief: issues, PRs welcome, describe the change.
+
 ## License
+MIT
 ```
+
+Content is derived from existing Chinese README — translate and adapt, not rewrite from scratch.
 
 ---
 
