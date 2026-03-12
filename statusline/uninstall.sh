@@ -64,41 +64,16 @@ if [ -f "$SETTINGS_FILE" ]; then
     info "Cleaning settings.json..."
     SETTINGS_TMP="${SETTINGS_FILE}.tmp"
 
-    # Remove statusLine key
-    if jq -e '.statusLine' "$SETTINGS_FILE" > /dev/null 2>&1; then
-        jq 'del(.statusLine)' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-        removed "statusLine config"
-    else
-        skipped "statusLine config (not found)"
-    fi
-
-    # Remove our hooks from SessionStart (entries containing heartbeat.sh)
-    if jq -e '.hooks.SessionStart' "$SETTINGS_FILE" > /dev/null 2>&1; then
-        jq '.hooks.SessionStart = [.hooks.SessionStart[] | select((.hooks // []) | all(.command // "" | test("heartbeat\\.sh") | not))]' \
-            "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-        # Remove empty SessionStart array
-        jq 'if (.hooks.SessionStart | length) == 0 then del(.hooks.SessionStart) else . end' \
-            "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-        removed "SessionStart hook"
-    else
-        skipped "SessionStart hook (not found)"
-    fi
-
-    # Remove our hooks from SessionEnd (entries containing sessions/$PPID)
-    if jq -e '.hooks.SessionEnd' "$SETTINGS_FILE" > /dev/null 2>&1; then
-        jq '.hooks.SessionEnd = [.hooks.SessionEnd[] | select((.hooks // []) | all(.command // "" | test("sessions/\\$PPID") | not))]' \
-            "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-        # Remove empty SessionEnd array
-        jq 'if (.hooks.SessionEnd | length) == 0 then del(.hooks.SessionEnd) else . end' \
-            "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-        removed "SessionEnd hook"
-    else
-        skipped "SessionEnd hook (not found)"
-    fi
-
-    # Remove empty hooks object
-    jq 'if (.hooks // {} | length) == 0 then del(.hooks) else . end' \
-        "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+    # Single jq pass: remove statusLine, filter our hooks, prune empty objects
+    jq '
+        del(.statusLine)
+        | .hooks.SessionStart |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("heartbeat\\.sh") | not))]
+        | .hooks.SessionEnd   |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("sessions/\\$PPID") | not))]
+        | if (.hooks.SessionStart | length) == 0 then del(.hooks.SessionStart) else . end
+        | if (.hooks.SessionEnd   | length) == 0 then del(.hooks.SessionEnd)   else . end
+        | if (.hooks // {} | length) == 0        then del(.hooks)              else . end
+    ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+    removed "statusLine config and hooks"
 else
     skipped "settings.json (not found)"
 fi
@@ -111,4 +86,4 @@ info "  tmux set-option -gu status-format[1]"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
-printf "${GREEN}[DONE]${NC}  Uninstall complete.\n"
+info "Uninstall complete."

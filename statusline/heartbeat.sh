@@ -37,8 +37,13 @@ if [ ! -f "$SESSION_FILE" ]; then
         || _cwd=""
     _pname=$(basename "${_cwd:-unknown}")
     _epoch=$(date +%s)
-    printf '{"pid":%s,"epoch":%s,"model":"","project_dir":"%s","project_name":"%s","git_branch":"","status":"idle","last_activity":"","used_pct":0,"tokens_in":0,"tokens_out":0,"mem_kb":0,"cost_usd":0}\n' \
-        "$TARGET_PID" "$_epoch" "$_cwd" "$_pname" > "$SESSION_FILE" 2>/dev/null || true
+    jq -n \
+        --argjson pid "$TARGET_PID" \
+        --argjson epoch "$_epoch" \
+        --arg pdir "$_cwd" \
+        --arg pname "$_pname" \
+        '{pid:$pid,epoch:$epoch,model:"",project_dir:$pdir,project_name:$pname,git_branch:"",status:"idle",last_activity:"",used_pct:0,tokens_in:0,tokens_out:0,mem_kb:0,cost_usd:0}' \
+        > "$SESSION_FILE" 2>/dev/null || true
 fi
 
 # ── Cleanup on exit ──────────────────────────────────────────────────────────

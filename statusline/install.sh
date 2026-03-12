@@ -107,30 +107,20 @@ else
     echo '{}' > "$SETTINGS_FILE"
 fi
 
-# Merge statusLine key
+# Merge statusLine + append hooks in a single jq pass (atomic, no TOCTOU)
 SETTINGS_TMP="${SETTINGS_FILE}.tmp"
-jq --argjson sl "$STATUSLINE_CONFIG" '.statusLine = $sl' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-
-# Append hooks (skip if already present)
-_has_hb_start=$(jq -r '(.hooks.SessionStart // [])[] | .hooks[]? | .command // "" | test("heartbeat\\.sh")' "$SETTINGS_FILE" 2>/dev/null | grep -c true || true)
-if [ "$_has_hb_start" -eq 0 ]; then
-    jq --arg cmd "$HB_START_CMD" '
-        .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":$cmd}]}])
-    ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-    info "SessionStart hook added."
-else
-    info "SessionStart hook already exists, skipping."
-fi
-
-_has_hb_stop=$(jq -r '(.hooks.SessionEnd // [])[] | .hooks[]? | .command // "" | test("sessions/\\$PPID")' "$SETTINGS_FILE" 2>/dev/null | grep -c true || true)
-if [ "$_has_hb_stop" -eq 0 ]; then
-    jq --arg cmd "$HB_STOP_CMD" '
-        .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":$cmd}]}])
-    ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
-    info "SessionEnd hook added."
-else
-    info "SessionEnd hook already exists, skipping."
-fi
+jq --argjson sl "$STATUSLINE_CONFIG" \
+   --arg start_cmd "$HB_START_CMD" \
+   --arg stop_cmd "$HB_STOP_CMD" '
+    .statusLine = $sl
+    | if ([(.hooks.SessionStart // [])[] | .hooks[]? | .command // ""] | any(test("heartbeat\\.sh"))) then .
+      else .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":$start_cmd}]}])
+      end
+    | if ([(.hooks.SessionEnd // [])[] | .hooks[]? | .command // ""] | any(test("sessions/\\$PPID"))) then .
+      else .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":$stop_cmd}]}])
+      end
+' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
+info "Settings updated (statusLine + hooks)."
 
 if [ -f "$SETTINGS_BACKUP" ]; then
     success "Settings merged. Original backed up to $SETTINGS_BACKUP"
