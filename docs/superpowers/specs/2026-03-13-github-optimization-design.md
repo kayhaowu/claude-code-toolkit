@@ -81,7 +81,7 @@ tokens_str=$(awk "BEGIN { printf \"%.1fk\", $tokens_used/1000 }")
 tokens_str=$(awk -v n="$tokens_used" 'BEGIN { printf "%.1fk", n/1000 }')
 ```
 
-**Complete inventory of vulnerable awk calls (6 total):**
+**Complete inventory of vulnerable awk calls (7 total):**
 
 `statusline-command.sh` (3 calls):
 1. Line 194: `tokens_str` formatting (`$tokens_used`)
