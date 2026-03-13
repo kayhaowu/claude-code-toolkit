@@ -173,7 +173,10 @@ tmux 整合會在第二行狀態列顯示精簡的 session 概覽：
 ```
 
 - `⚡` = WORKING（Claude 正在處理中）
+- `✅` = DONE（任務剛完成，30 秒後自動消失）
 - `💤` = IDLE（Claude 等待輸入中）
+
+✅ DONE 狀態需要安裝 [hooks 元件](../hooks/README.zh-TW.md)（`notify-on-stop.sh`）。
 
 ### 即時狀態偵測原理
 

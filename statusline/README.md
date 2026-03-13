@@ -173,7 +173,10 @@ The tmux integration shows a compact session overview on a second status bar lin
 ```
 
 - `⚡` = WORKING (Claude is actively processing)
+- `✅` = DONE (task just completed, auto-expires after 30s)
 - `💤` = IDLE (Claude is waiting for input)
+
+The ✅ DONE status requires the [hooks component](../hooks/README.md) (`notify-on-stop.sh`).
 
 ### How Real-Time Detection Works
 
