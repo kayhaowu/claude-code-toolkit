@@ -32,11 +32,27 @@
 
 ## 快速開始
 
+### 在本機安裝
+
+Clone 此 repo，然後執行：
+
 ```bash
+git clone https://github.com/kayhaowu/claude-code-toolkit.git
+cd claude-code-toolkit
 bash statusline/install.sh
 ```
 
-安裝完成後，重新啟動 Claude Code 即可啟用。
+安裝完成後，重新啟動 Claude Code 即可啟用。若在 tmux 中執行，session 監控會自動出現。
+
+### 部署到遠端 Linux 主機
+
+不需要在遠端 clone — 從本機執行即可：
+
+```bash
+bash tmux/deploy.sh user@host
+```
+
+透過 SSH 部署 tmux + Catppuccin 主題 + 插件，並詢問是否一併安裝 Claude Code statusline。
 
 ### 支援系統
 
@@ -88,29 +104,24 @@ Instances: 3  Context: 128.4k  Output: 15.6k  Mem: 1.4G
 
 ## tmux 整合
 
-在 tmux session 中執行安裝腳本會自動設定 session 監控。會自動偵測 Catppuccin 主題並使用對應顏色；否則 fallback 至預設顏色。
+在 tmux session 中執行 `statusline/install.sh` 會自動在第二行狀態列設定 session 監控。會自動偵測 Catppuccin 主題並使用對應顏色；否則 fallback 至預設顏色。
 
 狀態偵測透過 Claude Code hooks（UserPromptSubmit、PostToolUse、Stop）**事件驅動** — 近乎即時更新，非輪詢式。詳見 [`statusline/README.zh-TW.md`](statusline/README.zh-TW.md#即時狀態偵測原理)。
 
-## tmux 設定
+### tmux 設定（選用）
 
-完整的 Catppuccin Mocha tmux 設定，整合 Claude Code。詳見 [`tmux/README.zh-TW.md`](tmux/README.zh-TW.md)。
-
-### 本地設定
+此 repo 還包含完整的 Catppuccin Mocha tmux 設定。如果你除了 Claude statusline 之外也想要完整的 tmux 環境（主題、快捷鍵、插件）：
 
 ```bash
+# 複製設定檔並設定 TPM
 cp tmux/tmux.conf ~/.config/tmux/tmux.conf
 ln -sf ~/.config/tmux ~/.tmux
-# 安裝 TPM，然後在 tmux 內按 prefix + I
+git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+
+# 啟動 tmux 後按 Ctrl-a + I 安裝插件
 ```
 
-### 遠端部署
-
-```bash
-bash tmux/deploy.sh user@host
-```
-
-部署 tmux + Catppuccin 主題 + 插件至 Linux 伺服器。可選安裝 Claude Code statusline。
+詳見 [`tmux/README.zh-TW.md`](tmux/README.zh-TW.md) 的快捷鍵、插件與詳細說明。
 
 ## 環境設定
 

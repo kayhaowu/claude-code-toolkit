@@ -32,11 +32,27 @@ After installation in tmux, you get both the Claude Code status line and a tmux 
 
 ## Quick Start
 
+### Install on the current machine
+
+Clone this repo, then run:
+
 ```bash
+git clone https://github.com/kayhaowu/claude-code-toolkit.git
+cd claude-code-toolkit
 bash statusline/install.sh
 ```
 
-Restart Claude Code after installation to activate the status line.
+Restart Claude Code after installation. If you're inside tmux, the session monitor appears automatically.
+
+### Deploy to a remote Linux host
+
+No need to clone on the remote — run from your local machine:
+
+```bash
+bash tmux/deploy.sh user@host
+```
+
+This deploys tmux + Catppuccin theme + plugins via SSH, and asks if you also want to install Claude Code statusline.
 
 ### System Requirements
 
@@ -88,29 +104,24 @@ Updates every 2 seconds. Press `Ctrl+C` to exit.
 
 ## tmux Integration
 
-If you run the installer inside a tmux session, the session monitor is configured automatically. It auto-detects Catppuccin themes and uses matching colors; otherwise falls back to default colors.
+Running `statusline/install.sh` inside a tmux session automatically configures the session monitor on the second status line. It auto-detects Catppuccin themes and uses matching colors; otherwise falls back to default colors.
 
 Status detection is **event-driven** via Claude Code hooks (UserPromptSubmit, PostToolUse, Stop) — updates are near-instant, not polling-based. See [`statusline/README.md`](statusline/README.md#how-real-time-detection-works) for details.
 
-## tmux Configuration
+### tmux Configuration (optional)
 
-A complete Catppuccin Mocha tmux setup with Claude Code integration. See [`tmux/README.md`](tmux/README.md) for details.
-
-### Local Setup
+This repo also includes a complete Catppuccin Mocha tmux config. If you want the full tmux setup (theme, keybindings, plugins) in addition to the Claude statusline:
 
 ```bash
+# Copy config and set up TPM
 cp tmux/tmux.conf ~/.config/tmux/tmux.conf
 ln -sf ~/.config/tmux ~/.tmux
-# Install TPM, then press prefix + I inside tmux
+git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
+
+# Start tmux and press Ctrl-a + I to install plugins
 ```
 
-### Remote Deployment
-
-```bash
-bash tmux/deploy.sh user@host
-```
-
-Deploys tmux + Catppuccin theme + plugins to Linux servers. Optionally installs Claude Code statusline.
+See [`tmux/README.md`](tmux/README.md) for keybindings, plugins, and details.
 
 ## Configuration
 
