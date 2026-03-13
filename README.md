@@ -12,8 +12,22 @@
 - **tmux integration** — real-time session monitor on tmux status bar
 - **One-click installer** — supports macOS, Ubuntu/Debian, CentOS/RHEL
 
+After installation in tmux, you get both the Claude Code status line and a tmux session overview:
+
 ```
-Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │  main │ my-project
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ $ claude                                                                     │
+│                                                                              │
+│ > Help me refactor the auth module                                           │
+│                                                                              │
+│ I'll start by reading the current auth implementation...                     │
+│                                                                              │
+│ Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │  main │ my-proj  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [0] zsh           [1] claude*                                   13 Mar 10:30 │
+│ Claude: ⚡my-proj 42% │ 💤api-server 18% │ 💤docs 7%                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+ ↑ Claude Code status line (inside CLI)    ↑ tmux bar: all sessions at a glance
 ```
 
 ## Quick Start

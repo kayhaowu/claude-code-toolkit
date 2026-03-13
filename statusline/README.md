@@ -4,9 +4,25 @@
 
 Custom status line for the Claude Code CLI, displaying model name, context usage, token count, estimated cost, git branch, and project name. Supports 5 color themes.
 
+**Status line** (inside Claude Code CLI):
 ```
 Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │ est $0.12 │  main │ my-project
  purple         green/gray          yellow    cyan           yellow     blue      green
+```
+
+**After installation in tmux** — status line + session overview:
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ $ claude                                                                     │
+│                                                                              │
+│ > Help me refactor the auth module                                           │
+│                                                                              │
+│ Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │  main │ my-proj  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [0] zsh           [1] claude*                                   13 Mar 10:30 │
+│ Claude: ⚡my-proj 42% │ 💤api-server 18% │ 💤docs 7%                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+ ↑ Claude Code status line (inside CLI)    ↑ tmux bar: all sessions at a glance
 ```
 
 ## System Requirements
