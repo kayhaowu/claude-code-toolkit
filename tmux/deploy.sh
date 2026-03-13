@@ -243,13 +243,34 @@ if [[ -d "$STATUSLINE_DIR" ]]; then
     echo ""
     printf "Also install Claude Code statusline on $REMOTE_HOST? [y/N] "
     read -r _answer
+    _has_statusline=0
     if [[ "$_answer" =~ ^[Yy] ]]; then
+        _has_statusline=1
         info "Deploying Claude Code statusline ..."
         scp -r "${SSH_OPTS[@]}" "$STATUSLINE_DIR" "$REMOTE_HOST:/tmp/statusline-deploy"
         ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'bash /tmp/statusline-deploy/install.sh && rm -rf /tmp/statusline-deploy'
         success "Claude Code statusline installed on $REMOTE_HOST"
     else
         info "Skipped statusline install. tmux.conf will gracefully handle missing scripts."
+    fi
+fi
+
+# 4. Optionally deploy Claude Code hooks
+HOOKS_DIR="$REPO_DIR/hooks"
+if [[ -d "$HOOKS_DIR" ]]; then
+    echo ""
+    printf "Also install Claude Code hooks on $REMOTE_HOST? [y/N] "
+    if [[ "$_has_statusline" = "0" ]]; then
+        echo "(Note: usage-logger and context-alert require statusline)"
+    fi
+    read -r _answer
+    if [[ "$_answer" =~ ^[Yy] ]]; then
+        info "Deploying Claude Code hooks ..."
+        scp -r "${SSH_OPTS[@]}" "$HOOKS_DIR" "$REMOTE_HOST:/tmp/hooks-deploy"
+        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'bash /tmp/hooks-deploy/install.sh && rm -rf /tmp/hooks-deploy'
+        success "Claude Code hooks installed on $REMOTE_HOST"
+    else
+        info "Skipped hooks install."
     fi
 fi
 
