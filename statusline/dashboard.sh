@@ -26,6 +26,7 @@ C_WORKING='\033[1;33m' # Bold yellow  — WORKING status
 C_IDLE='\033[1;32m'    # Bold green   — IDLE status
 C_WAITING='\033[2;37m' # Dim white    — WAITING status
 C_QUEUED='\033[1;35m'  # Bold magenta — QUEUED status
+C_DONE='\033[1;32m'    # Bold green   — DONE status
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 fmt_k() {
@@ -105,8 +106,8 @@ render() {
         model=$(printf '%s' "$model_r" | sed 's/^Claude //')
 
         # Determine display status: prefer event-driven .status file
-        disp_status=""
-        read -r disp_status _ < "$SESSIONS_DIR/${pid}.status" 2>/dev/null || disp_status=""
+        disp_status="" _status_epoch=""
+        read -r disp_status _status_epoch < "$SESSIONS_DIR/${pid}.status" 2>/dev/null || disp_status=""
         # Fallback: JSON field, then file age
         if [ -z "$disp_status" ]; then
             age=$(( now - epoch ))
@@ -121,6 +122,7 @@ render() {
 
         case "$(printf '%s' "$disp_status" | tr '[:upper:]' '[:lower:]')" in
             working|thinking|responding|streaming) sc="$C_WORKING"; sl="WORKING" ;;
+            done)                                  sc="$C_DONE";    sl="DONE"    ;;
             idle|waiting_for_input)                sc="$C_IDLE";    sl="IDLE"    ;;
             waiting)                               sc="$C_WAITING"; sl="WAITING" ;;
             queued)                                sc="$C_QUEUED";  sl="QUEUED"  ;;
@@ -172,8 +174,8 @@ render() {
     printf '%bMem:%b %b%s%b\n'       "$BOLD" "$R" "$C_OUT" "$mem_str"  "$R"
 
     # Status legend
-    printf '\n%bStatus:%b  %bWORKING%b  %bIDLE%b  %bWAITING%b  %bQUEUED%b' \
-        "$BOLD" "$R" "$C_WORKING" "$R" "$C_IDLE" "$R" "$C_WAITING" "$R" "$C_QUEUED" "$R"
+    printf '\n%bStatus:%b  %bWORKING%b  %bDONE%b  %bIDLE%b  %bWAITING%b  %bQUEUED%b' \
+        "$BOLD" "$R" "$C_WORKING" "$R" "$C_DONE" "$R" "$C_IDLE" "$R" "$C_WAITING" "$R" "$C_QUEUED" "$R"
     printf '   %b» text  → tool  « user%b\n' "$DIM" "$R"
 }
 
