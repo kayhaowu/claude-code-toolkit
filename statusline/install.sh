@@ -126,9 +126,9 @@ jq --argjson sl "$STATUSLINE_CONFIG" \
     | if ([(.hooks.SessionStart // [])[] | .hooks[]? | .command // ""] | any(test("heartbeat\\.sh"))) then .
       else .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":$start_cmd}]}])
       end
-    | if ([(.hooks.SessionEnd // [])[] | .hooks[]? | .command // ""] | any(test("sessions/\\$PPID"))) then .
-      else .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":$stop_cmd}]}])
-      end
+    # SessionEnd: always replace our hook (remove old, add current) to pick up new cleanup targets
+    | .hooks.SessionEnd = [(.hooks.SessionEnd // [])[] | select((.hooks // []) | all(.command // "" | test("sessions/\\$PPID") | not))]
+    | .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":$stop_cmd}]}])
     | if ([(.hooks.UserPromptSubmit // [])[] | .hooks[]? | .command // ""] | any(test("status-hook\\.sh"))) then .
       else .hooks.UserPromptSubmit = ((.hooks.UserPromptSubmit // []) + [{"hooks":[{"type":"command","command":$hook_working}]}])
       end
