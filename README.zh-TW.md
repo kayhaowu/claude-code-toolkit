@@ -88,15 +88,29 @@ Instances: 3  Context: 128.4k  Output: 15.6k  Mem: 1.4G
 
 ## tmux 整合
 
-在 tmux session 中執行安裝腳本會自動設定 session 監控。手動設定：
-
-```bash
-tmux set-option -g status 2
-tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)"
-tmux set-option -g status-interval 2
-```
+在 tmux session 中執行安裝腳本會自動設定 session 監控。會自動偵測 Catppuccin 主題並使用對應顏色；否則 fallback 至預設顏色。
 
 狀態偵測透過 Claude Code hooks（UserPromptSubmit、PostToolUse、Stop）**事件驅動** — 近乎即時更新，非輪詢式。詳見 [`statusline/README.zh-TW.md`](statusline/README.zh-TW.md#即時狀態偵測原理)。
+
+## tmux 設定
+
+完整的 Catppuccin Mocha tmux 設定，整合 Claude Code。詳見 [`tmux/README.zh-TW.md`](tmux/README.zh-TW.md)。
+
+### 本地設定
+
+```bash
+cp tmux/tmux.conf ~/.config/tmux/tmux.conf
+ln -sf ~/.config/tmux ~/.tmux
+# 安裝 TPM，然後在 tmux 內按 prefix + I
+```
+
+### 遠端部署
+
+```bash
+bash tmux/deploy.sh user@host
+```
+
+部署 tmux + Catppuccin 主題 + 插件至 Linux 伺服器。可選安裝 Claude Code statusline。
 
 ## 環境設定
 

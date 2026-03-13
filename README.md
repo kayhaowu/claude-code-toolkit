@@ -88,15 +88,29 @@ Updates every 2 seconds. Press `Ctrl+C` to exit.
 
 ## tmux Integration
 
-If you run the installer inside a tmux session, the session monitor is configured automatically. For manual setup:
-
-```bash
-tmux set-option -g status 2
-tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)"
-tmux set-option -g status-interval 2
-```
+If you run the installer inside a tmux session, the session monitor is configured automatically. It auto-detects Catppuccin themes and uses matching colors; otherwise falls back to default colors.
 
 Status detection is **event-driven** via Claude Code hooks (UserPromptSubmit, PostToolUse, Stop) — updates are near-instant, not polling-based. See [`statusline/README.md`](statusline/README.md#how-real-time-detection-works) for details.
+
+## tmux Configuration
+
+A complete Catppuccin Mocha tmux setup with Claude Code integration. See [`tmux/README.md`](tmux/README.md) for details.
+
+### Local Setup
+
+```bash
+cp tmux/tmux.conf ~/.config/tmux/tmux.conf
+ln -sf ~/.config/tmux ~/.tmux
+# Install TPM, then press prefix + I inside tmux
+```
+
+### Remote Deployment
+
+```bash
+bash tmux/deploy.sh user@host
+```
+
+Deploys tmux + Catppuccin theme + plugins to Linux servers. Optionally installs Claude Code statusline.
 
 ## Configuration
 

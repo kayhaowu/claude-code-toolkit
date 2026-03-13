@@ -149,12 +149,31 @@ fi
 
 # ── Step 6: Configure tmux (optional) ────────────────────────────────────────
 if command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
-    info "tmux detected. Setting up real-time session monitor on status bar line 2..."
-    tmux set-option -g status 2
-    tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)"
-    tmux set-option -g status-interval 2
-    success "tmux session monitor enabled (updates every 2s)."
-    info "To disable: tmux set-option -g status 1"
+    # Check if tmux.conf already manages the Claude monitor.
+    # Note: on first install before tmux.conf is sourced, this returns 0
+    # and install.sh sets its own status-format[1]. When tmux.conf is later
+    # sourced, if-shell overwrites it — the final state is correct either way.
+    _has_tmux_conf_monitor=$(tmux show -g status-format[1] 2>/dev/null | grep -c "tmux-sessions.sh" || echo "0")
+
+    if [ "$_has_tmux_conf_monitor" -gt 0 ]; then
+        info "Claude monitor already configured in tmux.conf. Skipping tmux setup."
+    else
+        # Detect catppuccin theme
+        _tmux_theme=$(tmux show -gv @catppuccin_flavor 2>/dev/null || echo "")
+
+        if [ -n "$_tmux_theme" ]; then
+            info "Catppuccin theme detected ($_tmux_theme). Using themed colors..."
+            tmux set-option -g status 2
+            tmux set-option -g status-format[1] "#[align=left,fg=#{@thm_mauve},bg=#{@thm_crust}] Claude: #(sh ~/.claude/tmux-sessions.sh)"
+        else
+            info "tmux detected. Setting up real-time session monitor on status bar line 2..."
+            tmux set-option -g status 2
+            tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)"
+        fi
+        tmux set-option -g status-interval 2
+        success "tmux session monitor enabled (updates every 2s)."
+        info "To disable: tmux set-option -g status 1"
+    fi
 else
     info "tmux not detected or not inside a tmux session."
     info "To enable real-time session monitor, run inside tmux:"
