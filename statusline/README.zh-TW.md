@@ -35,6 +35,7 @@ bash statusline/install.sh
 2. 安裝 `jq`（若尚未安裝）
 3. 複製腳本至 `~/.claude/`（`statusline-command.sh`、`dashboard.sh`、`heartbeat.sh`、`tmux-sessions.sh`、`status-hook.sh`）
 4. 更新 `~/.claude/settings.json` — 設定 statusLine、session 生命週期 hooks（SessionStart/SessionEnd）、事件驅動狀態 hooks（UserPromptSubmit/PostToolUse/Stop）。自動備份既有設定
+5. 若在 tmux session 中執行，自動設定第二行狀態列顯示即時 session 監控（每 2 秒更新）
 
 若 `settings.json` 已存在，原始檔案會備份為 `~/.claude/settings.json.backup`。
 
