@@ -38,10 +38,9 @@ case "$_cmd" in
         ;;
 esac
 
-# Case-insensitive SQL check: convert to lowercase for matching
-_cmd_lower=$(printf '%s' "$_cmd" | tr '[:upper:]' '[:lower:]')
-case "$_cmd_lower" in
-    *'drop table'*|*'drop database'*)
+# Case-insensitive SQL check via POSIX character classes (no subprocess)
+case "$_cmd" in
+    *[Dd][Rr][Oo][Pp]' '[Tt][Aa][Bb][Ll][Ee]*|*[Dd][Rr][Oo][Pp]' '[Dd][Aa][Tt][Aa][Bb][Aa][Ss][Ee]*)
         _blocked="SQL destructive operation: DROP TABLE/DATABASE" ;;
 esac
 

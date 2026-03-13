@@ -107,7 +107,7 @@ fi
 SETTINGS_TMP="${SETTINGS_FILE}.tmp"
 
 # Build jq filter dynamically based on selection
-_jq_filter='. as $orig'
+_jq_filter='.'
 
 # Recommended hooks
 if [ "$_install_recommended" = "1" ]; then
@@ -139,8 +139,8 @@ if [ "$_install_optional" = "1" ]; then
       end'
 
     # usage-logger (SessionStart + SessionEnd)
-    if [ "$_has_statusline" = "1" ] || true; then
-        # Install regardless — gracefully degrades without statusline
+    # usage-logger installs regardless — gracefully degrades without statusline
+    if true; then
         _jq_filter="$_jq_filter"'
         | if ([(.hooks.SessionStart // [])[] | .hooks[]? | .command // ""] | any(test("hooks/usage-logger"))) then .
           else .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/usage-logger.sh start $PPID"}]}])

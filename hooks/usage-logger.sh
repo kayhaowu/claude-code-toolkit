@@ -37,11 +37,11 @@ case "$_action" in
 
         _end=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-        # Read start data from temp file
-        _start=$(jq -r '.start // ""' "$TMP_FILE" 2>/dev/null)
-        _session_id=$(jq -r '.session_id // ""' "$TMP_FILE" 2>/dev/null)
-        _project=$(jq -r '.project // ""' "$TMP_FILE" 2>/dev/null)
-        _model=$(jq -r '.model // ""' "$TMP_FILE" 2>/dev/null)
+        # Read start data from temp file (single jq call)
+        _tmp_data=$(jq -r '[.start, .session_id, .project, .model] | @tsv' "$TMP_FILE" 2>/dev/null) || exit 0
+        IFS='	' read -r _start _session_id _project _model <<EOF
+$_tmp_data
+EOF
 
         # Calculate duration
         _start_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$_start" +%s 2>/dev/null) \

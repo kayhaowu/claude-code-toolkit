@@ -22,7 +22,7 @@ _find_project_root() {
             printf '%s' "$_d"
             return 0
         fi
-        _d=$(dirname "$_d")
+        _d="${_d%/*}"
     done
     return 1
 }
@@ -32,7 +32,8 @@ _root=$(_find_project_root "$_dir") || exit 0
 # Priority 1: Prettier
 case "$_ext" in
     js|ts|tsx|jsx|css|json|md)
-        if ls "$_root"/.prettierrc* 1>/dev/null 2>&1; then
+        set -- "$_root"/.prettierrc*
+        if [ -f "$1" ]; then
             _has_prettier=1
         elif [ -f "$_root/package.json" ] && jq -e '.dependencies.prettier // .devDependencies.prettier' "$_root/package.json" >/dev/null 2>&1; then
             _has_prettier=1
