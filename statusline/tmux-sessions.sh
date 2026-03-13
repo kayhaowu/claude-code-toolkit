@@ -24,8 +24,8 @@ EOF
     kill -0 "$_pid" 2>/dev/null || { rm -f "$_sf" "$SESSIONS_DIR/$_base.status"; continue; }
 
     # Read status from event-driven .status file (authoritative source)
-    _status=""
-    read -r _status _ < "$SESSIONS_DIR/$_base.status" 2>/dev/null || _status=""
+    _status="" _status_epoch=""
+    read -r _status _status_epoch < "$SESSIONS_DIR/$_base.status" 2>/dev/null || _status=""
     # Fallback: JSON status + age-based override (only when no .status file)
     if [ -z "$_status" ]; then
         if [ -n "$_json_status" ] && [ "$_json_status" != "null" ]; then
@@ -43,6 +43,19 @@ EOF
     # Status icon
     case "$_status" in
         working*|WORKING*) _icon="⚡" ;;
+        done*)
+            # Auto-expire done → idle after 30 seconds
+            if [ -n "$_status_epoch" ] && [ "$_status_epoch" -gt 0 ] 2>/dev/null; then
+                _done_age=$(( _now - _status_epoch ))
+                if [ "$_done_age" -lt 30 ]; then
+                    _icon="✅"
+                else
+                    _icon="💤"
+                fi
+            else
+                _icon="✅"
+            fi
+            ;;
         idle*|IDLE*)        _icon="💤" ;;
         *)                  _icon="·" ;;
     esac
