@@ -125,9 +125,9 @@ project_dir=$(echo "$input" | jq -r '.workspace.project_dir // .cwd // ""')
 # ── Git branch with 5-second cache ──────────────────────────────────────────
 
 _git_cache="/tmp/claude-sl-git-$(id -u)"
+_now=$(date +%s)
 git_branch=""
 if [ -n "$project_dir" ] && [ -d "$project_dir" ]; then
-    _now=$(date +%s)
     _cache_hit=0
     if [ -f "$_git_cache" ]; then
         _c_epoch=$(sed -n '1p' "$_git_cache")
@@ -244,17 +244,23 @@ printf '\n'
 
 SESSIONS_DIR="$HOME/.claude/sessions"
 if [ -d "$SESSIONS_DIR" ]; then
-    _epoch=$(date +%s)
-    _status=$(echo "$input" | jq -r '.session.status // .status // ""' 2>/dev/null) || _status=""
+    _epoch="$_now"
     _activity=$(echo "$input" | jq -r '.last_message // .session.last_message // ""' 2>/dev/null) || _activity=""
     _mem=$(ps -o rss= -p "$_claude_pid" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
-    # Detect idle: if output tokens haven't changed since last render, session is idle
-    _prev_tout=0
+    # Status detection: prefer event-driven .status file from hooks
     _sf="$SESSIONS_DIR/$_claude_pid.json"
-    if [ -f "$_sf" ]; then
-        _prev_tout=$(jq -r '.tokens_out // 0' "$_sf" 2>/dev/null) || _prev_tout=0
+    _status=""
+    read -r _status _ < "$SESSIONS_DIR/$_claude_pid.status" 2>/dev/null || _status=""
+    # Fallback: detect via session JSON status field
+    if [ -z "$_status" ]; then
+        _status=$(echo "$input" | jq -r '.session.status // .status // ""' 2>/dev/null) || _status=""
     fi
+    # Fallback: tokens_out comparison (for installs without hooks)
     if [ -z "$_status" ] || [ "$_status" = "null" ]; then
+        _prev_tout=0
+        if [ -f "$_sf" ]; then
+            _prev_tout=$(jq -r '.tokens_out // 0' "$_sf" 2>/dev/null) || _prev_tout=0
+        fi
         if [ "${total_output:-0}" -gt "$_prev_tout" ] 2>/dev/null; then
             _status="working"
         else

@@ -147,6 +147,39 @@ Status:  WORKING  IDLE  WAITING  QUEUED   » text  → tool  « user
 
 **運作原理：** `statusline-command.sh` 每次被 Claude Code 呼叫時，會將 session 狀態寫入 `~/.claude/sessions/<PID>.json`，dashboard 讀取這些檔案並彙整顯示。
 
+## tmux 狀態列
+
+tmux 整合會在第二行狀態列顯示精簡的 session 概覽：
+
+```
+⚡my-project 42% │ 💤other-proj 14%
+```
+
+- `⚡` = WORKING（Claude 正在處理中）
+- `💤` = IDLE（Claude 等待輸入中）
+
+### 即時狀態偵測原理
+
+狀態偵測使用**事件驅動 hooks** 實現即時更新：
+
+| 事件 | Hook | 寫入狀態 |
+|------|------|---------|
+| 使用者送出 prompt | `UserPromptSubmit` | `working` |
+| 工具呼叫完成 | `PostToolUse` | `working` |
+| Claude 完成回應 | `Stop` | `idle` |
+
+Hooks 寫入輕量純文字檔（`~/.claude/sessions/<PID>.status`）— 不需要 JSON 解析，約 5ms 完成更新。tmux 每 2 秒讀取此檔案，實現近乎即時的狀態顯示。
+
+**檔案所有權模型（無競態條件）：**
+
+| 檔案 | 唯一寫入者 |
+|------|-----------|
+| `<PID>.json` | `statusline-command.sh` |
+| `<PID>.status` | `status-hook.sh`（由 hooks 觸發）|
+| `<PID>.hb.dat` | `heartbeat.sh` |
+
+若未安裝 hooks，系統會自動 fallback 至 JSON 檔案的 token 比較偵測。
+
 ## 移除
 
 ```bash
@@ -175,5 +208,6 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 | `dashboard.sh` | 多實例 Dashboard（安裝後複製至 `~/.claude/`） |
 | `heartbeat.sh` | 心跳 Daemon（安裝後複製至 `~/.claude/`） |
 | `tmux-sessions.sh` | tmux 狀態列 segment（安裝後複製至 `~/.claude/`） |
+| `status-hook.sh` | 事件驅動狀態 hook（安裝後複製至 `~/.claude/`） |
 | `README.md` | 英文說明文件 |
 | `README.zh-TW.md` | 繁體中文說明文件 |

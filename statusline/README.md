@@ -147,6 +147,39 @@ Updates every 2 seconds. Press `Ctrl+C` to exit.
 
 **How it works:** Each time Claude Code invokes `statusline-command.sh`, session state is written to `~/.claude/sessions/<PID>.json`. The dashboard reads these files and aggregates the display.
 
+## tmux Status Bar
+
+The tmux integration shows a compact session overview on a second status bar line:
+
+```
+⚡my-project 42% │ 💤other-proj 14%
+```
+
+- `⚡` = WORKING (Claude is actively processing)
+- `💤` = IDLE (Claude is waiting for input)
+
+### How Real-Time Detection Works
+
+Status detection uses **event-driven hooks** for instant updates:
+
+| Event | Hook | Status Written |
+|-------|------|---------------|
+| User sends prompt | `UserPromptSubmit` | `working` |
+| Tool call completes | `PostToolUse` | `working` |
+| Claude finishes response | `Stop` | `idle` |
+
+Hooks write a lightweight plain-text file (`~/.claude/sessions/<PID>.status`) — no JSON parsing needed, updates in ~5ms. tmux reads this file every 2 seconds for near-instant status display.
+
+**File ownership model (no race conditions):**
+
+| File | Sole Writer |
+|------|-------------|
+| `<PID>.json` | `statusline-command.sh` |
+| `<PID>.status` | `status-hook.sh` (via hooks) |
+| `<PID>.hb.dat` | `heartbeat.sh` |
+
+For installations without hooks configured, the system falls back to token-based detection from the JSON file.
+
 ## Uninstall
 
 ```bash
@@ -175,5 +208,6 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 | `dashboard.sh` | Multi-instance dashboard (copied to `~/.claude/` after install) |
 | `heartbeat.sh` | Heartbeat daemon (copied to `~/.claude/` after install) |
 | `tmux-sessions.sh` | tmux status bar segment (copied to `~/.claude/` after install) |
+| `status-hook.sh` | Event-driven status hook (copied to `~/.claude/` after install) |
 | `README.md` | This documentation (English) |
 | `README.zh-TW.md` | Documentation (Traditional Chinese) |

@@ -86,7 +86,7 @@ render() {
 
         # Remove stale sessions for dead processes
         if ! kill -0 "$pid" 2>/dev/null; then
-            rm -f "$f"
+            rm -f "$f" "$SESSIONS_DIR/${pid}.status"
             continue
         fi
 
@@ -104,14 +104,19 @@ render() {
         # Shorten model name: "Claude Opus 4.6" → "Opus 4.6"
         model=$(printf '%s' "$model_r" | sed 's/^Claude //')
 
-        # Determine display status: prefer JSON field, fall back to file age
-        age=$(( now - epoch ))
-        if [ -n "$status_r" ] && [ "$status_r" != "null" ] && [ "$status_r" != "" ]; then
-            disp_status="$status_r"
-        elif [ "$age" -lt 6 ]; then
-            disp_status="working"
-        else
-            disp_status="idle"
+        # Determine display status: prefer event-driven .status file
+        disp_status=""
+        read -r disp_status _ < "$SESSIONS_DIR/${pid}.status" 2>/dev/null || disp_status=""
+        # Fallback: JSON field, then file age
+        if [ -z "$disp_status" ]; then
+            age=$(( now - epoch ))
+            if [ -n "$status_r" ] && [ "$status_r" != "null" ] && [ "$status_r" != "" ]; then
+                disp_status="$status_r"
+            elif [ "$age" -lt 10 ]; then
+                disp_status="working"
+            else
+                disp_status="idle"
+            fi
         fi
 
         case "$(printf '%s' "$disp_status" | tr '[:upper:]' '[:lower:]')" in

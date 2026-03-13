@@ -11,19 +11,35 @@ _out=""
 _count=0
 for _sf in "$SESSIONS_DIR"/*.json; do
     [ -f "$_sf" ] || continue
-    case "$(basename "$_sf" .json)" in *[!0-9]*) continue ;; esac
-    _pid=$(jq -r '.pid // 0' "$_sf" 2>/dev/null)
-    kill -0 "$_pid" 2>/dev/null || { rm -f "$_sf"; continue; }
-    _name=$(jq -r '.project_name // "?"' "$_sf" 2>/dev/null | cut -c1-12)
-    _status=$(jq -r '.status // ""' "$_sf" 2>/dev/null)
-    _pct=$(jq -r '.used_pct // 0' "$_sf" 2>/dev/null)
-    _epoch=$(jq -r '.epoch // 0' "$_sf" 2>/dev/null)
-    _age=$(( _now - _epoch ))
-    # Override status: if no statusline render for >10s, session is idle
-    # (statusline only renders when Claude is actively working)
-    if [ "$_age" -gt 10 ]; then
-        _status="idle"
+    _base="${_sf##*/}"; _base="${_base%.json}"
+    case "$_base" in *[!0-9]*) continue ;; esac
+
+    # Single jq call: extract all needed fields in one pass
+    _tsv=$(jq -r '[(.pid // 0), (.project_name // "?"), (.used_pct // 0), (.status // ""), (.epoch // 0)] | @tsv' "$_sf" 2>/dev/null) || continue
+    IFS='	' read -r _pid _name _pct _json_status _epoch <<EOF
+$_tsv
+EOF
+    _name=$(printf '%.12s' "$_name")
+
+    kill -0 "$_pid" 2>/dev/null || { rm -f "$_sf" "$SESSIONS_DIR/$_base.status"; continue; }
+
+    # Read status from event-driven .status file (authoritative source)
+    _status=""
+    read -r _status _ < "$SESSIONS_DIR/$_base.status" 2>/dev/null || _status=""
+    # Fallback: JSON status + age-based override (only when no .status file)
+    if [ -z "$_status" ]; then
+        if [ -n "$_json_status" ] && [ "$_json_status" != "null" ]; then
+            _status="$_json_status"
+        fi
+        # Only apply age heuristic when JSON status is also absent
+        if [ -z "$_status" ]; then
+            _age=$(( _now - _epoch ))
+            if [ "$_age" -gt 10 ]; then
+                _status="idle"
+            fi
+        fi
     fi
+
     # Status icon
     case "$_status" in
         working*|WORKING*) _icon="⚡" ;;

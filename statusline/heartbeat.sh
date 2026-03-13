@@ -11,6 +11,7 @@ TARGET_PID="${1:?Usage: heartbeat.sh <pid>}"
 SESSIONS_DIR="$HOME/.claude/sessions"
 SESSION_FILE="$SESSIONS_DIR/$TARGET_PID.json"
 HB_FILE="$SESSIONS_DIR/$TARGET_PID.hb.dat"
+STATUS_FILE="$SESSIONS_DIR/$TARGET_PID.status"
 PIDFILE="$SESSIONS_DIR/$TARGET_PID.hb.pid"
 INTERVAL=2
 
@@ -26,6 +27,13 @@ fi
 # ── Write our PID ────────────────────────────────────────────────────────────
 mkdir -p "$SESSIONS_DIR"
 echo $$ > "$PIDFILE"
+
+# ── Create initial .status file ──────────────────────────────────────────────
+# Establish an initial idle status so tmux-sessions.sh has a source of truth
+# even before any hook fires.
+if [ ! -f "$STATUS_FILE" ]; then
+    printf '%s %s\n' "idle" "$(date +%s)" > "$STATUS_FILE" 2>/dev/null || true
+fi
 
 # ── Create initial session JSON if it doesn't exist ──────────────────────────
 # The statusline only renders when Claude is active, so new idle sessions
@@ -48,7 +56,7 @@ fi
 
 # ── Cleanup on exit ──────────────────────────────────────────────────────────
 cleanup() {
-    rm -f "$PIDFILE" "$HB_FILE"
+    rm -f "$PIDFILE" "$HB_FILE" "$STATUS_FILE"
     # If parent is dead, remove stale session file too
     if ! kill -0 "$TARGET_PID" 2>/dev/null; then
         rm -f "$SESSION_FILE"

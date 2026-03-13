@@ -9,6 +9,7 @@ TARGET_SCRIPT="$CLAUDE_DIR/statusline-command.sh"
 TARGET_DASHBOARD="$CLAUDE_DIR/dashboard.sh"
 TARGET_HEARTBEAT="$CLAUDE_DIR/heartbeat.sh"
 TARGET_TMUX="$CLAUDE_DIR/tmux-sessions.sh"
+TARGET_STATUS_HOOK="$CLAUDE_DIR/status-hook.sh"
 SESSIONS_DIR="$CLAUDE_DIR/sessions"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 SETTINGS_BACKUP="$CLAUDE_DIR/settings.json.backup"
@@ -87,6 +88,11 @@ cp "$SCRIPT_DIR/tmux-sessions.sh" "$TARGET_TMUX"
 chmod +x "$TARGET_TMUX"
 success "Copied to $TARGET_TMUX"
 
+info "Installing status-hook.sh to $CLAUDE_DIR..."
+cp "$SCRIPT_DIR/status-hook.sh" "$TARGET_STATUS_HOOK"
+chmod +x "$TARGET_STATUS_HOOK"
+success "Copied to $TARGET_STATUS_HOOK"
+
 # Create symlink so both statusline.sh and statusline-command.sh work.
 # Claude Code may save settings.json with either filename; the symlink
 # ensures the command resolves regardless of which name is configured.
@@ -96,7 +102,9 @@ info "Symlink: statusline.sh -> statusline-command.sh"
 # ── Step 5: Merge settings.json ──────────────────────────────────────────────
 STATUSLINE_CONFIG='{"type":"command","command":"sh ~/.claude/statusline-command.sh"}'
 HB_START_CMD='nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &'
-HB_STOP_CMD="sh -c 'kill \$(cat ~/.claude/sessions/\$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/\$PPID.json ~/.claude/sessions/\$PPID.hb.dat ~/.claude/sessions/\$PPID.hb.pid'"
+HB_STOP_CMD="sh -c 'kill \$(cat ~/.claude/sessions/\$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/\$PPID.json ~/.claude/sessions/\$PPID.hb.dat ~/.claude/sessions/\$PPID.hb.pid ~/.claude/sessions/\$PPID.status'"
+HOOK_WORKING_CMD='sh ~/.claude/status-hook.sh $PPID working'
+HOOK_IDLE_CMD='sh ~/.claude/status-hook.sh $PPID idle'
 
 if [ -f "$SETTINGS_FILE" ]; then
     info "Backing up existing settings.json to $SETTINGS_BACKUP..."
@@ -111,13 +119,24 @@ fi
 SETTINGS_TMP="${SETTINGS_FILE}.tmp"
 jq --argjson sl "$STATUSLINE_CONFIG" \
    --arg start_cmd "$HB_START_CMD" \
-   --arg stop_cmd "$HB_STOP_CMD" '
+   --arg stop_cmd "$HB_STOP_CMD" \
+   --arg hook_working "$HOOK_WORKING_CMD" \
+   --arg hook_idle "$HOOK_IDLE_CMD" '
     .statusLine = $sl
     | if ([(.hooks.SessionStart // [])[] | .hooks[]? | .command // ""] | any(test("heartbeat\\.sh"))) then .
       else .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":$start_cmd}]}])
       end
     | if ([(.hooks.SessionEnd // [])[] | .hooks[]? | .command // ""] | any(test("sessions/\\$PPID"))) then .
       else .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":$stop_cmd}]}])
+      end
+    | if ([(.hooks.UserPromptSubmit // [])[] | .hooks[]? | .command // ""] | any(test("status-hook\\.sh"))) then .
+      else .hooks.UserPromptSubmit = ((.hooks.UserPromptSubmit // []) + [{"hooks":[{"type":"command","command":$hook_working}]}])
+      end
+    | if ([(.hooks.PostToolUse // [])[] | .hooks[]? | .command // ""] | any(test("status-hook\\.sh"))) then .
+      else .hooks.PostToolUse = ((.hooks.PostToolUse // []) + [{"hooks":[{"type":"command","command":$hook_working}]}])
+      end
+    | if ([(.hooks.Stop // [])[] | .hooks[]? | .command // ""] | any(test("status-hook\\.sh"))) then .
+      else .hooks.Stop = ((.hooks.Stop // []) + [{"hooks":[{"type":"command","command":$hook_idle}]}])
       end
 ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
 info "Settings updated (statusLine + hooks)."

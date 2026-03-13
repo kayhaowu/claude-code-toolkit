@@ -34,7 +34,7 @@ done
 # ── Step 2: Clean session files ───────────────────────────────────────────────
 info "Cleaning session files..."
 _cleaned=0
-for pattern in "$SESSIONS_DIR"/*.json "$SESSIONS_DIR"/*.hb.dat "$SESSIONS_DIR"/*.hb.pid; do
+for pattern in "$SESSIONS_DIR"/*.json "$SESSIONS_DIR"/*.hb.dat "$SESSIONS_DIR"/*.hb.pid "$SESSIONS_DIR"/*.status; do
     for f in $pattern; do
         [ -f "$f" ] || continue
         rm -f "$f"
@@ -49,7 +49,7 @@ fi
 
 # ── Step 3: Remove installed scripts ──────────────────────────────────────────
 info "Removing installed scripts..."
-for script in statusline-command.sh statusline.sh dashboard.sh heartbeat.sh tmux-sessions.sh; do
+for script in statusline-command.sh statusline.sh dashboard.sh heartbeat.sh tmux-sessions.sh status-hook.sh; do
     target="$CLAUDE_DIR/$script"
     if [ -f "$target" ] || [ -L "$target" ]; then
         rm -f "$target"
@@ -67,11 +67,17 @@ if [ -f "$SETTINGS_FILE" ]; then
     # Single jq pass: remove statusLine, filter our hooks, prune empty objects
     jq '
         del(.statusLine)
-        | .hooks.SessionStart |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("heartbeat\\.sh") | not))]
-        | .hooks.SessionEnd   |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("sessions/\\$PPID") | not))]
-        | if (.hooks.SessionStart | length) == 0 then del(.hooks.SessionStart) else . end
-        | if (.hooks.SessionEnd   | length) == 0 then del(.hooks.SessionEnd)   else . end
-        | if (.hooks // {} | length) == 0        then del(.hooks)              else . end
+        | .hooks.SessionStart      |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("heartbeat\\.sh") | not))]
+        | .hooks.SessionEnd        |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("sessions/\\$PPID") | not))]
+        | .hooks.UserPromptSubmit  |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("status-hook\\.sh") | not))]
+        | .hooks.PostToolUse       |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("status-hook\\.sh") | not))]
+        | .hooks.Stop              |= [(.// [])[] | select((.hooks // []) | all(.command // "" | test("status-hook\\.sh") | not))]
+        | if (.hooks.SessionStart      | length) == 0 then del(.hooks.SessionStart)      else . end
+        | if (.hooks.SessionEnd        | length) == 0 then del(.hooks.SessionEnd)        else . end
+        | if (.hooks.UserPromptSubmit  | length) == 0 then del(.hooks.UserPromptSubmit)  else . end
+        | if (.hooks.PostToolUse       | length) == 0 then del(.hooks.PostToolUse)       else . end
+        | if (.hooks.Stop              | length) == 0 then del(.hooks.Stop)              else . end
+        | if (.hooks // {} | length) == 0              then del(.hooks)                  else . end
     ' "$SETTINGS_FILE" > "$SETTINGS_TMP" && mv "$SETTINGS_TMP" "$SETTINGS_FILE"
     removed "statusLine config and hooks"
 else
