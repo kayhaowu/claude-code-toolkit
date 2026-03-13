@@ -22,10 +22,10 @@ After installation in tmux, you get both the Claude Code status line and a tmux 
 │                                                                              │
 │ I'll start by reading the current auth implementation...                     │
 │                                                                              │
-│ Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │  main │ my-proj  │
+│ Opus 4.6 │ [████████░░░░░░░░░░░░] │ 42% │ 85.2k tokens │  main │ my-proj     │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [0] zsh           [1] claude*                                   13 Mar 10:30 │
-│ Claude: ⚡my-proj 42% │ 💤api-server 18% │ 💤docs 7%                        │
+│ Claude: ⚡my-proj 42% │ 💤api-server 18% │ 💤docs 7%                          │
 └──────────────────────────────────────────────────────────────────────────────┘
  ↑ Claude Code status line (inside CLI)    ↑ tmux bar: all sessions at a glance
 ```
