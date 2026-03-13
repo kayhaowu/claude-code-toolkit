@@ -82,6 +82,8 @@ tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude:
 tmux set-option -g status-interval 2
 ```
 
+Status detection is **event-driven** via Claude Code hooks (UserPromptSubmit, PostToolUse, Stop) — updates are near-instant, not polling-based. See [`statusline/README.md`](statusline/README.md#how-real-time-detection-works) for details.
+
 ## Configuration
 
 | Environment Variable | Description | Default |

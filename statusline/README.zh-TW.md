@@ -33,8 +33,8 @@ bash statusline/install.sh
 
 1. 偵測作業系統
 2. 安裝 `jq`（若尚未安裝）
-3. 複製 `statusline-command.sh` 至 `~/.claude/`
-4. 更新 `~/.claude/settings.json`（自動備份既有設定）
+3. 複製腳本至 `~/.claude/`（`statusline-command.sh`、`dashboard.sh`、`heartbeat.sh`、`tmux-sessions.sh`、`status-hook.sh`）
+4. 更新 `~/.claude/settings.json` — 設定 statusLine、session 生命週期 hooks（SessionStart/SessionEnd）、事件驅動狀態 hooks（UserPromptSubmit/PostToolUse/Stop）。自動備份既有設定
 
 若 `settings.json` 已存在，原始檔案會備份為 `~/.claude/settings.json.backup`。
 

@@ -33,8 +33,8 @@ The script automatically:
 
 1. Detects operating system
 2. Installs `jq` (if not already installed)
-3. Copies scripts to `~/.claude/`
-4. Updates `~/.claude/settings.json` (auto-backs up existing settings)
+3. Copies scripts to `~/.claude/` (`statusline-command.sh`, `dashboard.sh`, `heartbeat.sh`, `tmux-sessions.sh`, `status-hook.sh`)
+4. Updates `~/.claude/settings.json` — configures statusLine, session lifecycle hooks (SessionStart/SessionEnd), and event-driven status hooks (UserPromptSubmit/PostToolUse/Stop). Auto-backs up existing settings
 
 If `settings.json` already exists, the original is backed up to `~/.claude/settings.json.backup`.
 
