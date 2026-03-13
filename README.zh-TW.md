@@ -123,6 +123,29 @@ git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 
 詳見 [`tmux/README.zh-TW.md`](tmux/README.zh-TW.md) 的快捷鍵、插件與詳細說明。
 
+## Hooks
+
+Claude Code 自動化 hook 腳本集合：
+
+| Hook | 事件 | 說明 |
+|------|------|------|
+| `safety-guard` | PreToolUse | 攔截危險指令（rm -rf /、force push、DROP TABLE）|
+| `sensitive-files` | PreToolUse | 攔截存取 .env、credentials、*.key 等敏感檔案 |
+| `auto-format` | PostToolUse | 編輯後自動格式化（prettier/black/gofmt/clang-format）|
+| `notify-on-stop` | Stop | Claude 完成時桌面/tmux 通知 |
+| `context-alert` | Stop | Context 使用超過 80% 時警告 |
+| `usage-logger` | Session | 記錄 session 使用量至 `~/.claude/hooks/usage.jsonl` |
+
+### 安裝 Hooks
+
+```bash
+bash hooks/install.sh
+```
+
+安全 hooks（safety-guard、sensitive-files）預設啟用。選用 hooks（auto-format、usage-logger、context-alert）可在安裝時啟用。
+
+詳見 [`hooks/README.zh-TW.md`](hooks/README.zh-TW.md)。
+
 ## 環境設定
 
 | 環境變數 | 說明 | 預設值 |

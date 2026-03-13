@@ -123,6 +123,29 @@ git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 
 See [`tmux/README.md`](tmux/README.md) for keybindings, plugins, and details.
 
+## Hooks
+
+Ready-to-use hook scripts for Claude Code automation:
+
+| Hook | Event | Description |
+|------|-------|-------------|
+| `safety-guard` | PreToolUse | Block dangerous commands (rm -rf /, force push, DROP TABLE) |
+| `sensitive-files` | PreToolUse | Block access to .env, credentials, *.key files |
+| `auto-format` | PostToolUse | Auto-format files after edit (prettier/black/gofmt/clang-format) |
+| `notify-on-stop` | Stop | Desktop/tmux notification when Claude finishes |
+| `context-alert` | Stop | Warn when context usage exceeds 80% |
+| `usage-logger` | Session | Log session usage to `~/.claude/hooks/usage.jsonl` |
+
+### Install Hooks
+
+```bash
+bash hooks/install.sh
+```
+
+Security hooks (safety-guard, sensitive-files) are enabled by default. Optional hooks (auto-format, usage-logger, context-alert) can be enabled during install.
+
+See [`hooks/README.md`](hooks/README.md) for details.
+
 ## Configuration
 
 | Environment Variable | Description | Default |
