@@ -25,7 +25,7 @@ EOF
 
     # Read status from event-driven .status file (authoritative source)
     _status="" _status_epoch=""
-    read -r _status _status_epoch < "$SESSIONS_DIR/$_base.status" 2>/dev/null || _status=""
+    { read -r _status _status_epoch < "$SESSIONS_DIR/$_base.status"; } 2>/dev/null || _status=""
     # Fallback: JSON status + age-based override (only when no .status file)
     if [ -z "$_status" ]; then
         if [ -n "$_json_status" ] && [ "$_json_status" != "null" ]; then
