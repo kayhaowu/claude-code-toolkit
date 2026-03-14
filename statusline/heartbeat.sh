@@ -32,7 +32,8 @@ echo $$ > "$PIDFILE"
 # Establish an initial idle status so tmux-sessions.sh has a source of truth
 # even before any hook fires.
 if [ ! -f "$STATUS_FILE" ]; then
-    printf '%s %s\n' "idle" "$(date +%s)" > "$STATUS_FILE" 2>/dev/null || true
+    printf -v _init_epoch '%(%s)T' -1
+    printf '%s %s\n' "idle" "$_init_epoch" > "$STATUS_FILE" 2>/dev/null || true
 fi
 
 # ── Create initial session JSON if it doesn't exist ──────────────────────────
@@ -44,7 +45,7 @@ if [ ! -f "$SESSION_FILE" ]; then
         || _cwd=$(lsof -a -p "$TARGET_PID" -d cwd -Fn 2>/dev/null | grep '^n' | cut -c2-) \
         || _cwd=""
     _pname=$(basename "${_cwd:-unknown}")
-    _epoch=$(date +%s)
+    printf -v _epoch '%(%s)T' -1
     jq -n \
         --argjson pid "$TARGET_PID" \
         --argjson epoch "$_epoch" \

@@ -75,7 +75,7 @@ for script in safety-guard.sh sensitive-files.sh auto-format.sh \
     fi
 done
 if [ -n "$_skipped" ]; then
-    warn "To overwrite, remove the files above and re-run install.sh"
+    warn "Skipped:${_skipped}. Remove them and re-run install.sh to overwrite."
 else
     success "Hook scripts linked to $HOOKS_DIR"
 fi
@@ -151,16 +151,14 @@ if [ "$_install_optional" = "1" ]; then
       end'
 
     # usage-logger (SessionStart + SessionEnd)
-    # usage-logger installs regardless — gracefully degrades without statusline
-    if true; then
-        _jq_filter="$_jq_filter"'
-        | if ([(.hooks.SessionStart // [])[] | .hooks[]? | .command // ""] | any(test("hooks/usage-logger"))) then .
-          else .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/usage-logger.sh start $PPID"}]}])
-          end
-        | if ([(.hooks.SessionEnd // [])[] | .hooks[]? | .command // ""] | any(test("hooks/usage-logger"))) then .
-          else .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/usage-logger.sh end $PPID"}]}])
-          end'
-    fi
+    # Installs regardless of statusline — gracefully degrades without it
+    _jq_filter="$_jq_filter"'
+    | if ([(.hooks.SessionStart // [])[] | .hooks[]? | .command // ""] | any(test("hooks/usage-logger"))) then .
+      else .hooks.SessionStart = ((.hooks.SessionStart // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/usage-logger.sh start $PPID"}]}])
+      end
+    | if ([(.hooks.SessionEnd // [])[] | .hooks[]? | .command // ""] | any(test("hooks/usage-logger"))) then .
+      else .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/usage-logger.sh end $PPID"}]}])
+      end'
 
     # context-alert (Stop) — requires statusline
     if [ "$_has_statusline" = "1" ]; then

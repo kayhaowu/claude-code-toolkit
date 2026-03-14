@@ -17,9 +17,10 @@ _input=$(cat)
 case "$_action" in
     start)
         mkdir -p "$SESSIONS_TMP"
-        _session_id=$(printf '%s' "$_input" | jq -r '.session_id // ""')
-        _cwd=$(printf '%s' "$_input" | jq -r '.cwd // ""')
-        _model=$(printf '%s' "$_input" | jq -r '.model // ""')
+        _tsv=$(printf '%s' "$_input" | jq -r '[.session_id // "", .cwd // "", .model // ""] | @tsv')
+        IFS='	' read -r _session_id _cwd _model <<EOF
+$_tsv
+EOF
         _project=$(basename "${_cwd:-unknown}")
         _start=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

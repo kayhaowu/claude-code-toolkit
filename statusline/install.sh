@@ -90,7 +90,7 @@ info "Linked: statusline.sh -> statusline-command.sh"
 
 # ── Step 5: Merge settings.json ──────────────────────────────────────────────
 STATUSLINE_CONFIG='{"type":"command","command":"sh ~/.claude/statusline-command.sh"}'
-HB_START_CMD='nohup sh ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &'
+HB_START_CMD='nohup bash ~/.claude/heartbeat.sh $PPID > /dev/null 2>&1 &'
 HB_STOP_CMD="sh -c 'kill \$(cat ~/.claude/sessions/\$PPID.hb.pid 2>/dev/null) 2>/dev/null; rm -f ~/.claude/sessions/\$PPID.json ~/.claude/sessions/\$PPID.hb.dat ~/.claude/sessions/\$PPID.hb.pid ~/.claude/sessions/\$PPID.status'"
 HOOK_WORKING_CMD='sh ~/.claude/status-hook.sh $PPID working'
 HOOK_IDLE_CMD='sh ~/.claude/status-hook.sh $PPID idle'

@@ -10,7 +10,7 @@ _path=$(printf '%s' "$_input" | jq -r '.tool_input.file_path // ""')
 [ -f "$_path" ] || exit 0
 
 _ext="${_path##*.}"
-_dir=$(dirname "$_path")
+_dir="${_path%/*}"
 
 # Walk up to find project root (stop at home or filesystem root)
 _find_project_root() {
