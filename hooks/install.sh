@@ -57,16 +57,28 @@ else
     info "jq already installed: $(jq --version)"
 fi
 
-# ── Step 3: Copy scripts ─────────────────────────────────────────────────────
-info "Installing hooks to $HOOKS_DIR..."
+# ── Step 3: Create symlinks ──────────────────────────────────────────────────
+# Use symbolic links so that `git pull` automatically updates installed hooks.
+# Skip files that already exist and are NOT our symlinks (user's own scripts).
+info "Creating symlinks in $HOOKS_DIR..."
 mkdir -p "$HOOKS_DIR" "$HOOKS_DIR/sessions"
 
+_skipped=""
 for script in safety-guard.sh sensitive-files.sh auto-format.sh \
               notify-on-stop.sh context-alert.sh usage-logger.sh; do
-    cp "$SCRIPT_DIR/$script" "$HOOKS_DIR/$script"
-    chmod +x "$HOOKS_DIR/$script"
+    _target="$HOOKS_DIR/$script"
+    if [ -e "$_target" ] && [ ! -L "$_target" ]; then
+        warn "Skipped: $_target already exists (not a symlink)."
+        _skipped="${_skipped} ${script}"
+    else
+        ln -sf "$SCRIPT_DIR/$script" "$_target"
+    fi
 done
-success "Hook scripts installed to $HOOKS_DIR"
+if [ -n "$_skipped" ]; then
+    warn "To overwrite, remove the files above and re-run install.sh"
+else
+    success "Hook scripts linked to $HOOKS_DIR"
+fi
 
 # ── Step 4: Hook selection ────────────────────────────────────────────────────
 _install_recommended=1

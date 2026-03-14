@@ -67,37 +67,26 @@ fi
 info "Creating $CLAUDE_DIR if needed..."
 mkdir -p "$CLAUDE_DIR" "$SESSIONS_DIR"
 
-# ── Step 4: Copy scripts ──────────────────────────────────────────────────────
-info "Installing statusline-command.sh to $CLAUDE_DIR..."
-cp "$SCRIPT_DIR/statusline-command.sh" "$TARGET_SCRIPT"
-chmod +x "$TARGET_SCRIPT"
-success "Copied to $TARGET_SCRIPT"
+# ── Step 4: Create symlinks ──────────────────────────────────────────────────
+# Use symbolic links so that `git pull` automatically updates installed scripts.
+# Skip files that already exist and are NOT our symlinks (user's own scripts).
+info "Creating symlinks in $CLAUDE_DIR..."
 
-info "Installing dashboard.sh to $CLAUDE_DIR..."
-cp "$SCRIPT_DIR/dashboard.sh" "$TARGET_DASHBOARD"
-chmod +x "$TARGET_DASHBOARD"
-success "Copied to $TARGET_DASHBOARD"
+for _script in statusline-command.sh dashboard.sh heartbeat.sh tmux-sessions.sh status-hook.sh; do
+    _target="$CLAUDE_DIR/$_script"
+    if [ -e "$_target" ] && [ ! -L "$_target" ]; then
+        warn "Skipped: $_target already exists (not a symlink). Backup and re-run to overwrite."
+    else
+        ln -sf "$SCRIPT_DIR/$_script" "$_target"
+        success "Linked: $_target -> $SCRIPT_DIR/$_script"
+    fi
+done
 
-info "Installing heartbeat.sh to $CLAUDE_DIR..."
-cp "$SCRIPT_DIR/heartbeat.sh" "$TARGET_HEARTBEAT"
-chmod +x "$TARGET_HEARTBEAT"
-success "Copied to $TARGET_HEARTBEAT"
-
-info "Installing tmux-sessions.sh to $CLAUDE_DIR..."
-cp "$SCRIPT_DIR/tmux-sessions.sh" "$TARGET_TMUX"
-chmod +x "$TARGET_TMUX"
-success "Copied to $TARGET_TMUX"
-
-info "Installing status-hook.sh to $CLAUDE_DIR..."
-cp "$SCRIPT_DIR/status-hook.sh" "$TARGET_STATUS_HOOK"
-chmod +x "$TARGET_STATUS_HOOK"
-success "Copied to $TARGET_STATUS_HOOK"
-
-# Create symlink so both statusline.sh and statusline-command.sh work.
+# Create alias symlink so both statusline.sh and statusline-command.sh work.
 # Claude Code may save settings.json with either filename; the symlink
 # ensures the command resolves regardless of which name is configured.
-ln -sf statusline-command.sh "$CLAUDE_DIR/statusline.sh"
-info "Symlink: statusline.sh -> statusline-command.sh"
+ln -sf "$SCRIPT_DIR/statusline-command.sh" "$CLAUDE_DIR/statusline.sh"
+info "Linked: statusline.sh -> statusline-command.sh"
 
 # ── Step 5: Merge settings.json ──────────────────────────────────────────────
 STATUSLINE_CONFIG='{"type":"command","command":"sh ~/.claude/statusline-command.sh"}'
