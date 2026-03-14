@@ -30,12 +30,12 @@ bash hooks/uninstall.sh
 Hooks are split into two tiers:
 
 **Recommended ON (enabled by default):**
+- `notify-on-stop.sh` — desktop/tmux notification when Claude finishes
 - `safety-guard.sh` — blocks destructive commands before they run
 - `sensitive-files.sh` — blocks access to credential files
 
 **Optional OFF (disabled by default, enabled during install):**
 - `auto-format.sh` — requires formatters to be installed
-- `notify-on-stop.sh` — requires desktop notification support or tmux
 - `context-alert.sh` — useful when nearing context limits
 - `usage-logger.sh` — creates a persistent log file
 
@@ -94,11 +94,11 @@ Fires on `PostToolUse` for file edit tool calls. Detects the file type and runs 
 
 Fires on `Stop` events. Sends a notification when Claude finishes a response. Only fires if the session has been active for more than **30 seconds** (avoids noise for quick replies).
 
-Notification chain (tries in order):
-1. `terminal-notifier` (macOS, rich notifications)
-2. `osascript` (macOS, system notifications)
-3. `notify-send` (Linux desktop)
-4. tmux `display-message` (always available in tmux)
+Notification chain (non-exclusive, multiple fire):
+1. tmux ✅ status — writes `done` to `.status` file, tmux shows ✅ for 30s (requires tmux + statusline)
+2. Terminal bell — `printf '\a'`
+3. macOS Notification Center — `osascript` (skipped over SSH)
+4. Linux desktop — `notify-send` (requires `$DISPLAY` or `$WAYLAND_DISPLAY`)
 
 The notification includes the project name and a brief completion message.
 

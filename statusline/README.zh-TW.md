@@ -49,7 +49,7 @@ bash statusline/install.sh
 
 1. 偵測作業系統
 2. 安裝 `jq`（若尚未安裝）
-3. 複製腳本至 `~/.claude/`（`statusline-command.sh`、`dashboard.sh`、`heartbeat.sh`、`tmux-sessions.sh`、`status-hook.sh`）
+3. 在 `~/.claude/` 建立指向 repo 原始碼的符號連結（`statusline-command.sh`、`dashboard.sh`、`heartbeat.sh`、`tmux-sessions.sh`、`status-hook.sh`）— `git pull` 即可自動更新，無需重新安裝。若檔案已存在且非符號連結（使用者自己的腳本），會跳過保護
 4. 更新 `~/.claude/settings.json` — 設定 statusLine、session 生命週期 hooks（SessionStart/SessionEnd）、事件驅動狀態 hooks（UserPromptSubmit/PostToolUse/Stop）。自動備份既有設定
 5. 若在 tmux session 中執行，自動設定第二行狀態列顯示即時 session 監控（每 2 秒更新）
 
@@ -120,10 +120,9 @@ brew install jq          # macOS
 sudo apt install -y jq   # Ubuntu/Debian
 sudo yum install -y jq   # CentOS/RHEL
 
-# 2. 複製腳本
+# 2. 建立符號連結（或複製）
 mkdir -p ~/.claude
-cp statusline/statusline-command.sh ~/.claude/
-chmod +x ~/.claude/statusline-command.sh
+ln -sf "$(pwd)/statusline/statusline-command.sh" ~/.claude/statusline-command.sh
 
 # 3. 設定 Claude Code（若 settings.json 已存在，請手動合併 statusLine 區塊）
 cat > ~/.claude/settings.json << 'EOF'
@@ -222,12 +221,12 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 
 | 檔案 | 說明 |
 |------|------|
-| `install.sh` | 一鍵安裝腳本（重複執行可升級至最新版本） |
+| `install.sh` | 一鍵安裝腳本（符號連結方式，`git pull` 自動更新） |
 | `uninstall.sh` | 一鍵移除腳本 |
-| `statusline-command.sh` | 狀態列腳本（安裝後複製至 `~/.claude/`） |
-| `dashboard.sh` | 多實例 Dashboard（安裝後複製至 `~/.claude/`） |
-| `heartbeat.sh` | 心跳 Daemon（安裝後複製至 `~/.claude/`） |
-| `tmux-sessions.sh` | tmux 狀態列 segment（安裝後複製至 `~/.claude/`） |
-| `status-hook.sh` | 事件驅動狀態 hook（安裝後複製至 `~/.claude/`） |
+| `statusline-command.sh` | 狀態列腳本（安裝後以符號連結至 `~/.claude/`） |
+| `dashboard.sh` | 多實例 Dashboard（安裝後以符號連結至 `~/.claude/`） |
+| `heartbeat.sh` | 心跳 Daemon，需要 bash 4.2+（安裝後以符號連結至 `~/.claude/`） |
+| `tmux-sessions.sh` | tmux 狀態列 segment（安裝後以符號連結至 `~/.claude/`） |
+| `status-hook.sh` | 事件驅動狀態 hook（安裝後以符號連結至 `~/.claude/`） |
 | `README.md` | 英文說明文件 |
 | `README.zh-TW.md` | 繁體中文說明文件 |

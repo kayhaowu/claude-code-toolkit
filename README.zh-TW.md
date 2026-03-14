@@ -142,7 +142,7 @@ Claude Code 自動化 hook 腳本集合：
 bash hooks/install.sh
 ```
 
-安全 hooks（safety-guard、sensitive-files）預設啟用。選用 hooks（auto-format、usage-logger、context-alert）可在安裝時啟用。
+建議 hooks（notify-on-stop、safety-guard、sensitive-files）預設啟用。選用 hooks（auto-format、usage-logger、context-alert）可在安裝時啟用。腳本以符號連結方式安裝，`git pull` 即可自動更新，無需重新安裝。
 
 詳見 [`hooks/README.zh-TW.md`](hooks/README.zh-TW.md)。
 

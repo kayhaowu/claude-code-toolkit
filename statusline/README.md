@@ -49,7 +49,7 @@ The script automatically:
 
 1. Detects operating system
 2. Installs `jq` (if not already installed)
-3. Copies scripts to `~/.claude/` (`statusline-command.sh`, `dashboard.sh`, `heartbeat.sh`, `tmux-sessions.sh`, `status-hook.sh`)
+3. Creates symlinks in `~/.claude/` pointing to repo source (`statusline-command.sh`, `dashboard.sh`, `heartbeat.sh`, `tmux-sessions.sh`, `status-hook.sh`) — `git pull` auto-updates without re-install. Skips files that already exist as regular files to avoid overwriting user's own scripts
 4. Updates `~/.claude/settings.json` — configures statusLine, session lifecycle hooks (SessionStart/SessionEnd), and event-driven status hooks (UserPromptSubmit/PostToolUse/Stop). Auto-backs up existing settings
 5. If running inside a tmux session, automatically configures a second status bar line with the real-time session monitor (updates every 2s)
 
@@ -120,10 +120,9 @@ brew install jq          # macOS
 sudo apt install -y jq   # Ubuntu/Debian
 sudo yum install -y jq   # CentOS/RHEL
 
-# 2. Copy scripts
+# 2. Create symlink (or copy)
 mkdir -p ~/.claude
-cp statusline/statusline-command.sh ~/.claude/
-chmod +x ~/.claude/statusline-command.sh
+ln -sf "$(pwd)/statusline/statusline-command.sh" ~/.claude/statusline-command.sh
 
 # 3. Configure Claude Code (merge statusLine block if settings.json already exists)
 cat > ~/.claude/settings.json << 'EOF'
@@ -222,12 +221,12 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 
 | File | Description |
 |------|-------------|
-| `install.sh` | One-click installer (re-run to upgrade to latest version) |
+| `install.sh` | One-click installer (symlinks auto-update via `git pull`) |
 | `uninstall.sh` | One-click uninstaller |
-| `statusline-command.sh` | Status line script (copied to `~/.claude/` after install) |
-| `dashboard.sh` | Multi-instance dashboard (copied to `~/.claude/` after install) |
-| `heartbeat.sh` | Heartbeat daemon (copied to `~/.claude/` after install) |
-| `tmux-sessions.sh` | tmux status bar segment (copied to `~/.claude/` after install) |
-| `status-hook.sh` | Event-driven status hook (copied to `~/.claude/` after install) |
+| `statusline-command.sh` | Status line script (symlinked to `~/.claude/` after install) |
+| `dashboard.sh` | Multi-instance dashboard (symlinked to `~/.claude/` after install) |
+| `heartbeat.sh` | Heartbeat daemon, requires bash 4.2+ (symlinked to `~/.claude/` after install) |
+| `tmux-sessions.sh` | tmux status bar segment (symlinked to `~/.claude/` after install) |
+| `status-hook.sh` | Event-driven status hook (symlinked to `~/.claude/` after install) |
 | `README.md` | This documentation (English) |
 | `README.zh-TW.md` | Documentation (Traditional Chinese) |

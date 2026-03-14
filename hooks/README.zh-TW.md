@@ -30,12 +30,12 @@ bash hooks/uninstall.sh
 Hooks 分為兩個層級：
 
 **建議開啟（預設啟用）：**
+- `notify-on-stop.sh` — Claude 完成時桌面/tmux 通知
 - `safety-guard.sh` — 在執行前攔截破壞性指令
 - `sensitive-files.sh` — 攔截存取憑證檔案
 
 **選用關閉（預設停用，安裝時可啟用）：**
 - `auto-format.sh` — 需要已安裝格式化工具
-- `notify-on-stop.sh` — 需要桌面通知支援或 tmux
 - `context-alert.sh` — 接近 context 上限時有用
 - `usage-logger.sh` — 建立持久化日誌檔案
 
@@ -94,11 +94,11 @@ Hooks 分為兩個層級：
 
 在 `Stop` 事件觸發。當 Claude 完成回應時發送通知。僅在 session 持續超過 **30 秒**時觸發（避免快速回覆的噪音）。
 
-通知鏈（依序嘗試）：
-1. `terminal-notifier`（macOS，豐富通知）
-2. `osascript`（macOS，系統通知）
-3. `notify-send`（Linux 桌面）
-4. tmux `display-message`（在 tmux 中隨時可用）
+通知鏈（非排他，多管道同時觸發）：
+1. tmux ✅ 狀態 — 將 `done` 寫入 `.status` 檔，tmux 顯示 ✅ 持續 30 秒（需要 tmux + statusline）
+2. Terminal bell — `printf '\a'`
+3. macOS 通知中心 — `osascript`（SSH 連線時跳過）
+4. Linux 桌面通知 — `notify-send`（需要 `$DISPLAY` 或 `$WAYLAND_DISPLAY`）
 
 通知包含專案名稱與簡短完成訊息。
 

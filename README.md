@@ -142,7 +142,7 @@ Ready-to-use hook scripts for Claude Code automation:
 bash hooks/install.sh
 ```
 
-Security hooks (safety-guard, sensitive-files) are enabled by default. Optional hooks (auto-format, usage-logger, context-alert) can be enabled during install.
+Recommended hooks (notify-on-stop, safety-guard, sensitive-files) are enabled by default. Optional hooks (auto-format, usage-logger, context-alert) can be enabled during install. Scripts are symlinked so `git pull` auto-updates without re-installing.
 
 See [`hooks/README.md`](hooks/README.md) for details.
 
