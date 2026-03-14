@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Heartbeat daemon for Claude Code session status tracking.
 # Keeps session JSON epoch fresh so other sessions/dashboard see WORKING, not IDLE.
 #
@@ -73,8 +73,10 @@ while true; do
 
     # Write heartbeat to a SEPARATE file to avoid race conditions with statusline-command.sh.
     # statusline-command.sh owns the main .json; heartbeat owns .hb.dat.
-    _hb=$(date +%s)
-    _mem=$(ps -o rss= -p "$TARGET_PID" 2>/dev/null | awk '{printf "%d",$1+0}') || _mem=0
+    # Uses bash builtins to avoid forking date/awk (saves 2 forks per cycle).
+    printf -v _hb '%(%s)T' -1
+    _mem=$(ps -o rss= -p "$TARGET_PID" 2>/dev/null) || _mem=0
+    _mem=$(( ${_mem:-0} + 0 ))  # force integer, strip whitespace (replaces awk)
     printf '{"heartbeat_at":%s,"mem_kb":%s}\n' "$_hb" "$_mem" > "$HB_FILE" 2>/dev/null || true
 
     sleep "$INTERVAL"
