@@ -58,14 +58,8 @@ export class SessionStore extends EventEmitter {
           currentActivity = { type: 'idle', since: now };
         }
 
-        // If LogTailer detected recent activity, override scan's status
-        const status = (currentActivity.type !== 'idle' && session.status !== 'stopped')
-          ? 'working' as const
-          : session.status;
-
         const merged: Session = {
           ...session,
-          status,
           currentActivity,
           recentActivity: existing.recentActivity,
           taskInfo: { ...existing.taskInfo, ...session.taskInfo },
@@ -107,7 +101,6 @@ export class SessionStore extends EventEmitter {
 
     const updated: Session = {
       ...existing,
-      status: existing.status !== 'stopped' ? 'working' : existing.status,
       currentActivity: newActivity,
       recentActivity,
       dataSource: existing.dataSource === 'polling' ? 'polling' : 'both',
