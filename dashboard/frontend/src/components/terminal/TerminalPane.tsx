@@ -28,7 +28,7 @@ export function TerminalPane({ paneId, sessionId, onContextMenu }: TerminalPaneP
         foreground: '#d1d5db',
         cursor: '#d1d5db',
       },
-      fontFamily: 'monospace',
+      fontFamily: '"JetBrainsMono Nerd Font", "JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
       fontSize: 14,
     });
     const fit = new FitAddon();
