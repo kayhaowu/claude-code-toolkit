@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { Session, ActivityEntry, TaskInfo } from '@dashboard/types';
+import type { Session, ActivityEntry, TaskInfo, CurrentActivity } from '@dashboard/types';
 import { MAX_RECENT_ACTIVITY, PHANTOM_TTL_MS, ACTIVITY_STALENESS_MS } from '@dashboard/types';
 
 export class SessionStore extends EventEmitter {
@@ -81,8 +81,8 @@ export class SessionStore extends EventEmitter {
     const existing = this.sessions.get(id);
     if (!existing) return;
 
-    const newActivity = {
-      type: activity.type as const,
+    const newActivity: CurrentActivity = {
+      type: activity.type,
       tool: activity.tool,
       toolInput: activity.toolInput,
       since: activity.timestamp,
