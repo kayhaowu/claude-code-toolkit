@@ -56,10 +56,12 @@ io.on('connection', (socket) => {
       const session = await terminalManager.open(socket.id, payload);
       socket.emit('terminal:opened', { type: 'terminal:opened', session });
     } catch (err: any) {
-      socket.emit('terminal:error', {
-        type: 'terminal:error',
-        message: err.message,
-      });
+      console.error('[terminal:open]:', err);
+      const msg = err.message;
+      const safe = (typeof msg === 'string' && (msg.startsWith('tmux') || msg.startsWith('cwd') || msg.startsWith('Session')))
+        ? msg
+        : 'Failed to open terminal session';
+      socket.emit('terminal:error', { type: 'terminal:error', message: safe });
     }
   });
 
