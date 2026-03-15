@@ -69,7 +69,7 @@ EOF
     if [ -n "$_out" ]; then
         _out="${_out}#[fg=#bd93f9] │ "
     fi
-    _out="${_out}#[fg=${_color}]${_icon}${_name} ${_pct}%"
+    _out="${_out}#[fg=${_color}]${_icon} ${_name} ${_pct}%"
     _count=$(( _count + 1 ))
 done
 
