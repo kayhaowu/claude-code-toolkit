@@ -68,10 +68,15 @@ io.on('connection', (socket) => {
       terminalManager.write(sessionId, socket.id, data);
     } catch (err: any) {
       console.error(`[terminal:input] session=${sessionId}:`, err.message);
+      socket.emit('terminal:error', { type: 'terminal:error', sessionId, message: err.message });
     }
   });
 
   socket.on('terminal:resize', ({ sessionId, cols, rows }: any) => {
+    if (typeof cols !== 'number' || typeof rows !== 'number' || cols <= 0 || rows <= 0) {
+      socket.emit('terminal:error', { type: 'terminal:error', message: 'Invalid resize dimensions' });
+      return;
+    }
     try {
       terminalManager.resize(sessionId, socket.id, cols, rows);
     } catch (err: any) {
@@ -90,14 +95,23 @@ io.on('connection', (socket) => {
   });
 
   socket.on('terminal:reconnect', ({ sessionIds }: any) => {
-    const { lost } = terminalManager.handleReconnect(socket.id, sessionIds);
-    for (const sessionId of lost) {
-      socket.emit('terminal:closed', { type: 'terminal:closed', sessionId });
+    try {
+      if (!Array.isArray(sessionIds)) {
+        socket.emit('terminal:error', { type: 'terminal:error', message: 'Invalid reconnect payload' });
+        return;
+      }
+      const { lost } = terminalManager.handleReconnect(socket.id, sessionIds);
+      for (const sessionId of lost) {
+        socket.emit('terminal:closed', { type: 'terminal:closed', sessionId });
+      }
+      socket.emit('terminal:sessions', {
+        type: 'terminal:sessions',
+        sessions: terminalManager.getBySocket(socket.id),
+      });
+    } catch (err: any) {
+      console.error(`[terminal:reconnect]:`, err.message);
+      socket.emit('terminal:error', { type: 'terminal:error', message: err.message });
     }
-    socket.emit('terminal:sessions', {
-      type: 'terminal:sessions',
-      sessions: terminalManager.getBySocket(socket.id),
-    });
   });
 
   socket.on('disconnect', () => {

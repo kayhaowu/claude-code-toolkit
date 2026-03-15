@@ -50,6 +50,9 @@ export function useTerminalSocket(): React.RefObject<ReturnType<typeof acquireSo
 
     const onError = (event: { sessionId?: string; message: string }) => {
       console.error('[terminal]', event.message);
+      useTerminalStore.getState().setError(event.message);
+      // Auto-clear after 5 seconds
+      setTimeout(() => useTerminalStore.getState().clearError(), 5000);
     };
 
     socket.on('terminal:sessions', onSessions);
