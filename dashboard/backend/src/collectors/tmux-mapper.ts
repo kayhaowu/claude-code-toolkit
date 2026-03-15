@@ -2,6 +2,7 @@ import type { TmuxInfo } from '@dashboard/types';
 import { readlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { platform } from 'node:os';
 
 const execFileAsync = promisify(execFile);
 
@@ -56,7 +57,14 @@ export async function getTmuxMap(): Promise<Map<string, TmuxInfo>> {
 
 export async function readPidTty(pid: number): Promise<string | null> {
   try {
-    return await readlink(`/proc/${pid}/fd/0`);
+    if (platform() === 'linux') {
+      return await readlink(`/proc/${pid}/fd/0`);
+    }
+    // macOS fallback: use lsof to find the controlling TTY
+    const { stdout } = await execFileAsync('lsof', ['-p', String(pid), '-a', '-d', '0', '-Fn'], { timeout: 3000 });
+    // lsof output format: p<pid>\nn<path>
+    const match = stdout.match(/\nn(.+)/);
+    return match ? match[1] : null;
   } catch (err: any) {
     if (err?.code !== 'ENOENT' && err?.code !== 'EACCES') {
       console.warn(`[tmux-mapper] readPidTty(${pid}):`, err?.message ?? err);
