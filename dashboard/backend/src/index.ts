@@ -9,7 +9,7 @@ import { scanSessions } from './collectors/session-scanner.js';
 import { LogTailer } from './collectors/log-tailer.js';
 import { createHookRouter } from './collectors/hook-receiver.js';
 import { createApiRouter } from './api/routes.js';
-import { SCAN_INTERVAL_MS } from '../../types/src/index.js';
+import { SCAN_INTERVAL_MS } from '@dashboard/types';
 import { TerminalManager } from './terminal/terminal-manager.js';
 
 const PORT = parseInt(process.env.PORT ?? '3141', 10);

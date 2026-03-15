@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { useTerminalStore } from '../../store/terminal-store.js';
 import type { TerminalSession } from '@dashboard/types';
 
@@ -160,7 +160,7 @@ describe('useTerminalSocket', () => {
     });
 
     // emitSpy records the 'connect' emit too; find 'terminal:reconnect'
-    const reconnectCall = emitSpy.mock.calls.find((c) => c[0] === 'terminal:reconnect');
+    const reconnectCall = emitSpy.mock.calls.find((c: unknown[]) => c[0] === 'terminal:reconnect');
     expect(reconnectCall).toBeDefined();
     expect(reconnectCall![1]).toEqual({ sessionIds: ['term-a', 'term-b'] });
   });
@@ -174,7 +174,7 @@ describe('useTerminalSocket', () => {
       mockSocket.emit('connect');
     });
 
-    const reconnectCall = emitSpy.mock.calls.find((c) => c[0] === 'terminal:reconnect');
+    const reconnectCall = emitSpy.mock.calls.find((c: unknown[]) => c[0] === 'terminal:reconnect');
     expect(reconnectCall).toBeUndefined();
   });
 
@@ -185,7 +185,7 @@ describe('useTerminalSocket', () => {
 
     unmount();
 
-    const removedEvents = offSpy.mock.calls.map((c) => c[0]);
+    const removedEvents = offSpy.mock.calls.map((c: unknown[]) => c[0]);
     expect(removedEvents).toContain('terminal:sessions');
     expect(removedEvents).toContain('terminal:opened');
     expect(removedEvents).toContain('terminal:closed');

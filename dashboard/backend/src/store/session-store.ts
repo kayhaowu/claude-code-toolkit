@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
-import type { Session, ActivityEntry } from '../../types/src/index.js';
-import { MAX_RECENT_ACTIVITY, PHANTOM_TTL_MS, ACTIVITY_STALENESS_MS } from '../../types/src/index.js';
+import type { Session, ActivityEntry } from '@dashboard/types';
+import { MAX_RECENT_ACTIVITY, PHANTOM_TTL_MS, ACTIVITY_STALENESS_MS } from '@dashboard/types';
 
 export class SessionStore extends EventEmitter {
   private sessions = new Map<string, Session>();

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { execFileSync } from 'child_process';
 import * as pty from 'node-pty';
-import type { TerminalSession, TerminalOpenPayload } from '../../types/src/index.js';
+import type { TerminalSession, TerminalOpenPayload } from '@dashboard/types';
 import type { SessionStore } from '../store/session-store.js';
 
 interface SessionEntry {

@@ -2,7 +2,12 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "..",
+    "baseUrl": ".",
+    "paths": {
+      "@dashboard/types": ["../types/src/index.ts"],
+      "@dashboard/types/*": ["../types/src/*"]
+    }
   },
   "include": ["src", "../types/src"]
 }

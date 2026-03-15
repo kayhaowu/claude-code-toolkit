@@ -6,12 +6,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   resolve: {
-    alias: [
-      {
-        find: /^\.\.\/\.\.\/types\/src\/index\.js$/,
-        replacement: resolve(__dirname, '../types/src/index.ts'),
-      },
-    ],
+    alias: {
+      '@dashboard/types': resolve(__dirname, '../types/src/index.ts'),
+    },
   },
   test: {
     server: {

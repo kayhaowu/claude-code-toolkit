@@ -4,7 +4,7 @@ import request from 'supertest';
 import { SessionStore } from '../../store/session-store.js';
 import { createApiRouter } from '../routes.js';
 import { createHookRouter } from '../../collectors/hook-receiver.js';
-import type { Session } from '../../../../types/src/index.js';
+import type { Session } from '@dashboard/types';
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {

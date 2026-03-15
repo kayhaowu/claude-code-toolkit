@@ -5,6 +5,7 @@
     "jsx": "react-jsx",
     "outDir": "./dist",
     "noEmit": true,
+    "types": ["node"],
     "paths": {
       "@dashboard/types": ["../types/src/index.ts"]
     }

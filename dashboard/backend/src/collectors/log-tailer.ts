@@ -3,8 +3,8 @@ import { readdir, readFile } from 'node:fs/promises';
 import { watch, statSync, createReadStream } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { MAX_RECENT_ACTIVITY } from '../../types/src/index.js';
-import type { ActivityEntry } from '../../types/src/index.js';
+import { MAX_RECENT_ACTIVITY } from '@dashboard/types';
+import type { ActivityEntry } from '@dashboard/types';
 import { EventEmitter } from 'node:events';
 
 const PROJECTS_DIR = join(process.env.HOME ?? '', '.claude', 'projects');

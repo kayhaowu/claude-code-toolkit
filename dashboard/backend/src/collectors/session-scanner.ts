@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { Session, TmuxInfo } from '../../types/src/index.js';
+import type { Session, TmuxInfo } from '@dashboard/types';
 import { getTmuxMap as defaultGetTmuxMap, readPidTty as defaultReadPidTty } from './tmux-mapper.js';
 
 interface RawSessionJson {
