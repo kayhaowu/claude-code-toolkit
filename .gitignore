@@ -4,3 +4,5 @@
 *.swo
 *~
 tmux/plugins/
+node_modules/
+dashboard/*/dist/
