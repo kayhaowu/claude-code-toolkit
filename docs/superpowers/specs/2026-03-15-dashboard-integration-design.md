@@ -142,6 +142,10 @@ All timestamps are in **epoch milliseconds** (matching `Date.now()`):
 ### SessionStore Design
 
 - **Immutable updates**: `updateActivity()` and `updateTaskInfo()` create new Session objects via spread, never mutate in-place
+- **Status sync**: Two data sources determine session status:
+  - **SessionScanner** (polling): reads `status` from heartbeat file every 2s — can lag behind real activity
+  - **LogTailer** (event-driven): detects `tool_use` events from JSONL logs in near real-time
+  - **Merge rule**: LogTailer takes priority. If `currentActivity.type !== 'idle'`, status is overridden to `working` regardless of what the heartbeat file says. When `updateActivity()` is called with a tool_use event, status is immediately set to `working`. This prevents status flickering when the heartbeat file update is delayed.
 - **Phantom TTL**: Stopped sessions remain visible for 30s before removal
 - **Activity staleness**: Resets to idle if no heartbeat for 2 minutes
 - **Event-driven**: Emits `session:updated` and `session:removed` events
