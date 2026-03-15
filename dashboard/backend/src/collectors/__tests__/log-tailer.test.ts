@@ -1,6 +1,6 @@
 // packages/server/src/collectors/__tests__/log-tailer.test.ts
 import { describe, it, expect } from 'vitest';
-import { parseJsonlLine, detectTicket, findProjectSlugDir } from '../log-tailer.js';
+import { parseJsonlLine, findProjectSlugDir } from '../log-tailer.js';
 
 describe('parseJsonlLine', () => {
   it('extracts tool_use activity from assistant message', () => {
@@ -51,21 +51,6 @@ describe('parseJsonlLine', () => {
   it('returns null for user messages', () => {
     const line = { type: 'user', message: { role: 'user', content: 'hello' } };
     expect(parseJsonlLine(line)).toBeNull();
-  });
-});
-
-describe('detectTicket', () => {
-  it('extracts Jira ticket IDs from text', () => {
-    expect(detectTicket('Working on PROJ-123 now')).toBe('PROJ-123');
-    expect(detectTicket('Fix SONIC-4567 bug')).toBe('SONIC-4567');
-  });
-
-  it('returns null when no ticket found', () => {
-    expect(detectTicket('no ticket here')).toBeNull();
-  });
-
-  it('ignores short prefixes', () => {
-    expect(detectTicket('X-1 is not valid')).toBeNull();
   });
 });
 
