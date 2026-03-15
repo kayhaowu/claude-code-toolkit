@@ -108,7 +108,10 @@ export async function scanSessions(deps: ScanDeps = defaultDeps): Promise<Sessio
           status = hbParsed.status;
           lastHeartbeat = hbParsed.lastHeartbeat;
           memKb = hbParsed.memKb;
-        } catch {
+        } catch (err: any) {
+          if (err?.code !== 'ENOENT') {
+            console.warn(`[scan] Failed to read heartbeat for PID ${pid}:`, err);
+          }
           status = 'idle';
         }
       }
@@ -127,8 +130,8 @@ export async function scanSessions(deps: ScanDeps = defaultDeps): Promise<Sessio
         recentActivity: [],
         dataSource: 'polling',
       });
-    } catch {
-      // skip unreadable session files
+    } catch (err) {
+      console.warn(`[scan] Skipping session file ${file}:`, err);
     }
   }
 

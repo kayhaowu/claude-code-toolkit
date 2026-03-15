@@ -46,7 +46,10 @@ export async function getTmuxMap(): Promise<Map<string, TmuxInfo>> {
       'list-panes', '-a', '-F', '#{session_name}:#{window_index}:#{window_name} #{pane_tty} #{pane_pid}',
     ], { timeout: 3000 });
     return parseTmuxOutput(stdout);
-  } catch {
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') {
+      console.warn('[tmux-mapper] Failed to list tmux panes:', err?.message ?? err);
+    }
     return new Map();
   }
 }
@@ -54,7 +57,10 @@ export async function getTmuxMap(): Promise<Map<string, TmuxInfo>> {
 export async function readPidTty(pid: number): Promise<string | null> {
   try {
     return await readlink(`/proc/${pid}/fd/0`);
-  } catch {
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT' && err?.code !== 'EACCES') {
+      console.warn(`[tmux-mapper] readPidTty(${pid}):`, err?.message ?? err);
+    }
     return null;
   }
 }
