@@ -68,10 +68,14 @@ export class TerminalManager extends EventEmitter {
       throw new Error(`Failed to select pane ${session.tmux.window}.${session.tmux.pane}: ${err.message}`);
     }
 
-    const proc = pty.spawn('tmux', ['attach-session', '-t', groupedSessionName], {
+    const proc = pty.spawn('tmux', ['-T', '256,RGB,mouse,title', 'attach-session', '-t', groupedSessionName], {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
+      env: {
+        ...process.env,
+        COLORTERM: 'truecolor',
+      },
     });
 
     const meta: TerminalSession = {
@@ -131,10 +135,14 @@ export class TerminalManager extends EventEmitter {
       throw new Error(`Failed to create tmux session: ${err.message}`);
     }
 
-    const proc = pty.spawn('tmux', ['attach-session', '-t', tmuxSessionName], {
+    const proc = pty.spawn('tmux', ['-T', '256,RGB,mouse,title', 'attach-session', '-t', tmuxSessionName], {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
+      env: {
+        ...process.env,
+        COLORTERM: 'truecolor',
+      },
     });
 
     const meta: TerminalSession = {
