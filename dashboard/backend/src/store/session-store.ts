@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { Session, ActivityEntry } from '@dashboard/types';
+import type { Session, ActivityEntry, TaskInfo, CurrentActivity } from '@dashboard/types';
 import { MAX_RECENT_ACTIVITY, PHANTOM_TTL_MS, ACTIVITY_STALENESS_MS } from '@dashboard/types';
 
 export class SessionStore extends EventEmitter {
@@ -78,10 +78,10 @@ export class SessionStore extends EventEmitter {
     type: 'tool_use'; tool: string; toolInput: string; summary: string; timestamp: number;
   }): void {
     const id = String(pid);
-    const session = this.sessions.get(id);
-    if (!session) return;
+    const existing = this.sessions.get(id);
+    if (!existing) return;
 
-    session.currentActivity = {
+    const newActivity: CurrentActivity = {
       type: activity.type,
       tool: activity.tool,
       toolInput: activity.toolInput,
@@ -93,20 +93,31 @@ export class SessionStore extends EventEmitter {
       type: activity.type,
       summary: activity.summary,
     };
-    session.recentActivity.push(entry);
-    if (session.recentActivity.length > MAX_RECENT_ACTIVITY) {
-      session.recentActivity = session.recentActivity.slice(-MAX_RECENT_ACTIVITY);
+
+    let recentActivity = [...existing.recentActivity, entry];
+    if (recentActivity.length > MAX_RECENT_ACTIVITY) {
+      recentActivity = recentActivity.slice(-MAX_RECENT_ACTIVITY);
     }
 
-    session.dataSource = session.dataSource === 'polling' ? 'polling' : 'both';
-    this.emit('session:updated', session);
+    const updated: Session = {
+      ...existing,
+      currentActivity: newActivity,
+      recentActivity,
+      dataSource: existing.dataSource === 'polling' ? 'polling' : 'both',
+    };
+    this.sessions.set(id, updated);
+    this.emit('session:updated', updated);
   }
 
-  updateTaskInfo(pid: number, taskInfo: Session['taskInfo']): void {
+  updateTaskInfo(pid: number, taskInfo: Partial<TaskInfo>): void {
     const id = String(pid);
-    const session = this.sessions.get(id);
-    if (!session) return;
-    session.taskInfo = { ...session.taskInfo, ...taskInfo };
-    this.emit('session:updated', session);
+    const existing = this.sessions.get(id);
+    if (!existing) return;
+    const updated: Session = {
+      ...existing,
+      taskInfo: { ...existing.taskInfo, ...taskInfo },
+    };
+    this.sessions.set(id, updated);
+    this.emit('session:updated', updated);
   }
 }

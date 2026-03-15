@@ -26,6 +26,10 @@ vi.mock('child_process', () => ({
   execFileSync: vi.fn(),
 }));
 
+vi.mock('node:fs', () => ({
+  existsSync: vi.fn(() => true),
+}));
+
 function makeSessionStore(sessions: Record<number, { tmux?: { session: string; window: string; pane: string } }> = {}) {
   return {
     get(id: string) {

@@ -1,5 +1,8 @@
 import { EventEmitter } from 'events';
 import { execFileSync } from 'child_process';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { homedir } from 'node:os';
 import * as pty from 'node-pty';
 import type { TerminalSession, TerminalOpenPayload } from '@dashboard/types';
 import type { SessionStore } from '../store/session-store.js';
@@ -106,7 +109,18 @@ export class TerminalManager extends EventEmitter {
     const tmuxSessionName = `claude-web-${id}`;
 
     const args = ['new-session', '-d', '-s', tmuxSessionName];
-    if (cwd) args.push('-c', cwd);
+    if (cwd) {
+      const resolved = resolve(cwd);
+      const home = homedir();
+      const homePrefix = home.endsWith('/') ? home : home + '/';
+      if (resolved !== home && !resolved.startsWith(homePrefix) && resolved !== '/tmp' && !resolved.startsWith('/tmp/') && resolved !== '/private/tmp' && !resolved.startsWith('/private/tmp/')) {
+        throw new Error(`cwd must be under home directory or /tmp: ${resolved}`);
+      }
+      if (!existsSync(resolved)) {
+        throw new Error(`cwd does not exist: ${resolved}`);
+      }
+      args.push('-c', resolved);
+    }
 
     try {
       execFileSync('tmux', args);

@@ -38,7 +38,7 @@ export function parseSessionJson(raw: RawSessionJson): Pick<
     tokensIn: raw.tokens_in,
     tokensOut: raw.tokens_out,
     memKb: raw.mem_kb,
-    startedAt: raw.epoch,
+    startedAt: raw.epoch * 1000,
   };
 }
 
@@ -49,7 +49,7 @@ export function parseHeartbeat(raw: RawHeartbeat): {
 } {
   return {
     status: raw.status === 'working' ? 'working' : 'idle',
-    lastHeartbeat: raw.heartbeat_at,
+    lastHeartbeat: raw.heartbeat_at * 1000,
     memKb: raw.mem_kb,
   };
 }
@@ -74,7 +74,12 @@ const defaultDeps: ScanDeps = {
     return JSON.parse(data);
   },
   isProcessAlive(pid: number) {
-    try { process.kill(pid, 0); return true; } catch { return false; }
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (err: any) {
+      return err?.code === 'EPERM';
+    }
   },
   getTmuxMap: defaultGetTmuxMap,
   readPidTty: defaultReadPidTty,
@@ -108,7 +113,10 @@ export async function scanSessions(deps: ScanDeps = defaultDeps): Promise<Sessio
           status = hbParsed.status;
           lastHeartbeat = hbParsed.lastHeartbeat;
           memKb = hbParsed.memKb;
-        } catch {
+        } catch (err: any) {
+          if (err?.code !== 'ENOENT') {
+            console.warn(`[scan] Failed to read heartbeat for PID ${pid}:`, err);
+          }
           status = 'idle';
         }
       }
@@ -127,8 +135,8 @@ export async function scanSessions(deps: ScanDeps = defaultDeps): Promise<Sessio
         recentActivity: [],
         dataSource: 'polling',
       });
-    } catch {
-      // skip unreadable session files
+    } catch (err) {
+      console.warn(`[scan] Skipping session file ${file}:`, err);
     }
   }
 

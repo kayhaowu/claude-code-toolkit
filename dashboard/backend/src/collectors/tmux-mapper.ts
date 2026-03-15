@@ -2,6 +2,7 @@ import type { TmuxInfo } from '@dashboard/types';
 import { readlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { platform } from 'node:os';
 
 const execFileAsync = promisify(execFile);
 
@@ -46,15 +47,28 @@ export async function getTmuxMap(): Promise<Map<string, TmuxInfo>> {
       'list-panes', '-a', '-F', '#{session_name}:#{window_index}:#{window_name} #{pane_tty} #{pane_pid}',
     ], { timeout: 3000 });
     return parseTmuxOutput(stdout);
-  } catch {
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') {
+      console.warn('[tmux-mapper] Failed to list tmux panes:', err?.message ?? err);
+    }
     return new Map();
   }
 }
 
 export async function readPidTty(pid: number): Promise<string | null> {
   try {
-    return await readlink(`/proc/${pid}/fd/0`);
-  } catch {
+    if (platform() === 'linux') {
+      return await readlink(`/proc/${pid}/fd/0`);
+    }
+    // macOS fallback: use lsof to find the controlling TTY
+    const { stdout } = await execFileAsync('lsof', ['-p', String(pid), '-a', '-d', '0', '-Fn'], { timeout: 3000 });
+    // lsof output format: p<pid>\nn<path>
+    const match = stdout.match(/\nn(.+)/);
+    return match ? match[1] : null;
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT' && err?.code !== 'EACCES') {
+      console.warn(`[tmux-mapper] readPidTty(${pid}):`, err?.message ?? err);
+    }
     return null;
   }
 }

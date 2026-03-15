@@ -28,7 +28,7 @@ describe('parseSessionJson', () => {
       tokensIn: 45330,
       tokensOut: 707050,
       memKb: 655308,
-      startedAt: 1773126970,
+      startedAt: 1773126970 * 1000,
     });
   });
 });
@@ -39,7 +39,7 @@ describe('parseHeartbeat', () => {
     const result = parseHeartbeat(raw);
     expect(result).toEqual({
       status: 'idle',
-      lastHeartbeat: 1773129523,
+      lastHeartbeat: 1773129523 * 1000,
       memKb: 495564,
     });
   });

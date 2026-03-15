@@ -48,8 +48,12 @@ export function useTerminalSocket(): React.RefObject<ReturnType<typeof acquireSo
       persistSessionIds(useTerminalStore.getState().sessions);
     };
 
+    let errorTimer: ReturnType<typeof setTimeout> | null = null;
     const onError = (event: { sessionId?: string; message: string }) => {
       console.error('[terminal]', event.message);
+      useTerminalStore.getState().setError(event.message);
+      if (errorTimer) clearTimeout(errorTimer);
+      errorTimer = setTimeout(() => useTerminalStore.getState().clearError(), 5000);
     };
 
     socket.on('terminal:sessions', onSessions);

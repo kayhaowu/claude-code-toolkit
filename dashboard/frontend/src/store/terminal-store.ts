@@ -15,6 +15,7 @@ interface TerminalStoreState {
   sessions: Map<string, TerminalSession>;
   layout: SplitLayout | null;
   activePaneId: string | null;
+  error: string | null;
 
   setSessions: (sessions: TerminalSession[]) => void;
   addSession: (session: TerminalSession) => void;
@@ -23,6 +24,8 @@ interface TerminalStoreState {
   closePane: (paneId: string) => void;
   setActivePane: (paneId: string) => void;
   resizePane: (splitId: string, ratio: number) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
 }
 
 let paneCounter = 0;
@@ -103,6 +106,7 @@ export const useTerminalStore = create<TerminalStoreState>((set, get) => ({
   sessions: new Map(),
   layout: null,
   activePaneId: null,
+  error: null,
 
   setSessions: (sessions) => {
     const map = new Map<string, TerminalSession>();
@@ -148,6 +152,9 @@ export const useTerminalStore = create<TerminalStoreState>((set, get) => ({
   },
 
   setActivePane: (paneId) => set({ activePaneId: paneId }),
+
+  setError: (error) => set({ error }),
+  clearError: () => set({ error: null }),
 
   resizePane: (splitId, ratio) => {
     const { layout } = get();
