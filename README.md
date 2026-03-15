@@ -9,6 +9,7 @@
 - **Custom status line** — model name, context usage bar, token count, estimated cost, git branch, and project name
 - **5 color themes** — ansi-default, catppuccin-mocha, dracula, nord, none (+ NO_COLOR support)
 - **Multi-instance dashboard** — live terminal view of all active Claude Code sessions
+- **Web Dashboard** — real-time browser-based Session Monitor + Web Terminal (xterm.js)
 - **tmux integration** — real-time session monitor on tmux status bar
 - **One-click installer** — supports macOS, Ubuntu/Debian, CentOS/RHEL
 
@@ -101,6 +102,34 @@ Instances: 3  Context: 128.4k  Output: 15.6k  Mem: 1.4G
 ```
 
 Updates every 2 seconds. Press `Ctrl+C` to exit.
+
+## Web Dashboard
+
+A browser-based dashboard for monitoring Claude Code sessions and accessing terminals remotely.
+
+**Session Monitor** — real-time cards showing PID, project, model, tokens, cost, git branch, tmux window, and status (working/idle/stopped). Status filter and search. Connection status banner.
+
+**Web Terminal** — click "Open Terminal" on any session card to attach to its tmux window via xterm.js. Catppuccin Mocha theme, Nerd Font icons, split pane support, 24-bit true color.
+
+### Quick Start
+
+```bash
+cd dashboard/backend && pnpm install
+cd ../frontend && pnpm install && pnpm build
+cd ../backend && pnpm dev
+```
+
+Open http://127.0.0.1:3141
+
+### Docker
+
+```bash
+cd dashboard && docker compose up -d
+```
+
+Local-only access (binds to `127.0.0.1:3141`). Requires Node.js >= 24.
+
+See [`docs/superpowers/specs/2026-03-15-dashboard-integration-design.md`](docs/superpowers/specs/2026-03-15-dashboard-integration-design.md) for full design documentation.
 
 ## tmux Integration
 

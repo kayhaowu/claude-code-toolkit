@@ -1,14 +1,31 @@
 # Dashboard Integration Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+**Status:** Completed (2026-03-16)
 
 **Goal:** Migrate claude-dev into claude-code-toolkit as `dashboard/` with Session Monitor + Web Terminal, trimming workflow/Jira features.
 
 **Architecture:** Move-and-trim approach. Copy source files from `claude-dev/packages/` into `dashboard/{types,backend,frontend}/`, apply agent→session renames, remove workflow/Jira code, add Docker deployment. Backend serves static frontend in production, binds to 127.0.0.1:3141.
 
-**Tech Stack:** TypeScript 5.7+, Express 4, Socket.IO 4, React 18, Vite 6, Zustand 5, xterm.js 6, node-pty 1, Tailwind CSS 3, Vitest 3, Docker
+**Tech Stack:** TypeScript 5.7+, Node.js 24 (native TS), Express 4, Socket.IO 4, React 18, Vite 6, Zustand 5, xterm.js 6, node-pty 1.2.0-beta.12, Tailwind CSS 3, Vitest 3, Docker
 
 **Spec:** `docs/superpowers/specs/2026-03-15-dashboard-integration-design.md`
+
+## Post-Implementation Changes
+
+The following changes were made during and after initial implementation:
+
+1. **Runtime**: tsx → Node.js v24 native TS (`--experimental-strip-types`) due to ESM module resolution issues
+2. **Types import**: `@dashboard/types` path alias → local barrel file (`backend/src/types/index.ts`) with relative `.ts` imports
+3. **node-pty**: 1.1.0 → 1.2.0-beta.12 (Node v24 native addon compatibility)
+4. **Terminal**: Added "Open Terminal" button on SessionCard, wired to `terminal:open` socket event
+5. **tmux mapping**: Tab-delimited format, macOS `lsof` fallback, `/dev/*` TTY pattern
+6. **Theme**: Catppuccin Mocha 16-color ANSI palette in xterm.js, JetBrainsMono Nerd Font from CDN
+7. **True color**: `tmux -T 256,RGB,mouse,title` for per-client true color support
+8. **Status source**: `.status` file (event-driven) as authoritative, `.hb.dat` as fallback
+9. **Statusline enhancement**: Per-status colors (⚡ yellow, 💤 blue, ✅ green) in tmux-sessions.sh
+10. **Error handling**: Silent catches → warn logging, React ErrorBoundary, ConnectionBanner, input validation
+11. **Immutability**: SessionStore `updateActivity`/`updateTaskInfo` create new objects
+12. **Tests**: 118 total (70 backend + 48 frontend)
 
 ---
 

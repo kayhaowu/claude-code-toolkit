@@ -9,6 +9,7 @@
 - **自訂狀態列** — 模型名稱、Context 使用量進度條、Token 數、預估費用、Git 分支、專案名稱
 - **5 種色彩主題** — ansi-default、catppuccin-mocha、dracula、nord、none（+ NO_COLOR 支援）
 - **多實例 Dashboard** — 即時終端機畫面，顯示所有活躍的 Claude Code session
+- **Web Dashboard** — 瀏覽器即時 Session 監控 + Web Terminal（xterm.js）
 - **tmux 整合** — tmux 狀態列即時 session 監控，事件驅動偵測
 - **一鍵安裝** — 支援 macOS、Ubuntu/Debian、CentOS/RHEL
 
@@ -101,6 +102,34 @@ Instances: 3  Context: 128.4k  Output: 15.6k  Mem: 1.4G
 ```
 
 每 2 秒自動更新，按 `Ctrl+C` 離開。
+
+## Web Dashboard
+
+瀏覽器即時監控 Claude Code session 並遠端操作終端機。
+
+**Session Monitor** — 即時卡片顯示 PID、專案、模型、Token、費用、Git 分支、tmux 視窗、狀態（working/idle/stopped）。支援狀態篩選與搜尋。斷線自動顯示提示。
+
+**Web Terminal** — 點擊 session 卡片上的「Open Terminal」按鈕，透過 xterm.js 連接 tmux 視窗。Catppuccin Mocha 主題、Nerd Font 圖示、分割面板、24-bit true color。
+
+### 快速啟動
+
+```bash
+cd dashboard/backend && pnpm install
+cd ../frontend && pnpm install && pnpm build
+cd ../backend && pnpm dev
+```
+
+開啟 http://127.0.0.1:3141
+
+### Docker
+
+```bash
+cd dashboard && docker compose up -d
+```
+
+僅限本機存取（綁定 `127.0.0.1:3141`）。需要 Node.js >= 24。
+
+完整設計文件請參閱 [`docs/superpowers/specs/2026-03-15-dashboard-integration-design.md`](docs/superpowers/specs/2026-03-15-dashboard-integration-design.md)。
 
 ## tmux 整合
 
