@@ -12,10 +12,12 @@ export function parseTmuxOutput(output: string): Map<string, TmuxInfo> {
 
   for (const line of output.trim().split('\n')) {
     if (!line) continue;
-    // format: "session:window:windowName /dev/pts/X panePid"
-    const match = line.match(/^(\S+):(\S+):(\S+)\s+(\/dev\/pts\/\d+)\s+(\d+)$/);
-    if (!match) continue;
-    const [, session, window, windowName, tty] = match;
+    // format: "session\twindow\twindowName\t/dev/ttyXXX\tpanePid" (tab-delimited)
+    const parts = line.split('\t');
+    if (parts.length < 5) continue;
+    const [session, window, windowName, tty, _pid] = parts;
+    if (!tty?.startsWith('/dev/')) continue;
+
     const windowKey = `${session}:${window}`;
     const paneIndex = paneCountPerWindow.get(windowKey) ?? 0;
     paneCountPerWindow.set(windowKey, paneIndex + 1);
@@ -44,7 +46,7 @@ export function mapPidToTmux(
 export async function getTmuxMap(): Promise<Map<string, TmuxInfo>> {
   try {
     const { stdout } = await execFileAsync('tmux', [
-      'list-panes', '-a', '-F', '#{session_name}:#{window_index}:#{window_name} #{pane_tty} #{pane_pid}',
+      'list-panes', '-a', '-F', '#{session_name}\t#{window_index}\t#{window_name}\t#{pane_tty}\t#{pane_pid}',
     ], { timeout: 3000 });
     return parseTmuxOutput(stdout);
   } catch (err: any) {

@@ -4,10 +4,10 @@ import { parseTmuxOutput, mapPidToTmux } from '../tmux-mapper.ts';
 describe('parseTmuxOutput', () => {
   it('parses tmux list-panes output into a tty map', () => {
     const output = [
-      '0:0:cli-test /dev/pts/6 1371716',
-      '0:1:k8s /dev/pts/13 992033',
-      '0:2:edgecore-xcvr-tool /dev/pts/7 3036720',
-      '0:2:edgecore-xcvr-tool /dev/pts/0 1911663',
+      '0\t0\tcli-test\t/dev/pts/6\t1371716',
+      '0\t1\tk8s\t/dev/pts/13\t992033',
+      '0\t2\tedgecore-xcvr-tool\t/dev/pts/7\t3036720',
+      '0\t2\tedgecore-xcvr-tool\t/dev/pts/0\t1911663',
     ].join('\n');
 
     const result = parseTmuxOutput(output);
