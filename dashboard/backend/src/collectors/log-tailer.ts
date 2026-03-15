@@ -44,6 +44,13 @@ export function parseJsonlLine(line: any): ParsedActivity | null {
   };
 }
 
+const TICKET_REGEX = /\b[A-Z]{2,}-\d+\b/;
+
+export function detectTicket(text: string): string | null {
+  const match = text.match(TICKET_REGEX);
+  return match ? match[0] : null;
+}
+
 export function findProjectSlugDir(projectDir: string, slugDirs: string[]): string | null {
   const segments = projectDir.split('/').filter(Boolean);
 
