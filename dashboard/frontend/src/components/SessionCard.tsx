@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Session } from '@dashboard/types';
 import { useSessionStore } from '../store/session-store.js';
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   working: 'bg-green-500',
   idle: 'bg-yellow-500',
   stopped: 'bg-red-500',

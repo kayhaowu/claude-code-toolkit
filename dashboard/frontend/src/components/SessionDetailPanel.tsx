@@ -1,4 +1,5 @@
 import { useSessionStore } from '../store/session-store.js';
+import type { ActivityEntry } from '@dashboard/types';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString('en-US', { hour12: false });
@@ -65,7 +66,7 @@ export function SessionDetailPanel() {
 
       <h3 className="text-xs font-semibold text-gray-500 mb-2">Activity Timeline</h3>
       <div className="space-y-1 font-mono text-xs max-h-48 overflow-y-auto">
-        {session.recentActivity.slice().reverse().map((entry, i) => (
+        {session.recentActivity.slice().reverse().map((entry: ActivityEntry, i: number) => (
           <div key={i} className="flex gap-3 text-gray-300">
             <span className="text-gray-500 shrink-0">{formatTime(entry.timestamp)}</span>
             <span className="truncate">{entry.summary}</span>

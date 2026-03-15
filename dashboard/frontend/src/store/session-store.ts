@@ -44,7 +44,7 @@ export function useSortedSessions(): Session[] {
   const filter = useSessionStore(s => s.filter);
 
   return useMemo(() => {
-    const statusOrder = { working: 0, idle: 1, stopped: 2 };
+    const statusOrder: Record<string, number> = { working: 0, idle: 1, stopped: 2 };
     let list = Array.from(sessions.values());
 
     if (filter.status) {
