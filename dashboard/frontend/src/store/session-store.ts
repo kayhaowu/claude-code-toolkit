@@ -55,7 +55,8 @@ export function useSortedSessions(): Session[] {
       list = list.filter(s =>
         s.projectName.toLowerCase().includes(q) ||
         s.taskInfo.taskSubject?.toLowerCase().includes(q) ||
-        s.tmux.windowName.toLowerCase().includes(q)
+        s.tmux.windowName.toLowerCase().includes(q) ||
+        s.gitBranch?.toLowerCase().includes(q)
       );
     }
 

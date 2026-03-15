@@ -12,7 +12,7 @@ describe('TerminalContextMenu', () => {
     x: 100,
     y: 200,
     paneId: 'p1',
-    availableAgents: [
+    availableSessions: [
       { pid: 1, projectName: 'test-project', tmux: { session: 's', window: '0', pane: '0' } },
       { pid: 2, projectName: 'api-server', tmux: { session: 's', window: '0', pane: '1' } },
     ] as any[],

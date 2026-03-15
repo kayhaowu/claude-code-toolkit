@@ -1,9 +1,7 @@
-// packages/server/src/collectors/log-tailer.ts
 import { readdir, readFile } from 'node:fs/promises';
 import { watch, statSync, createReadStream } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { MAX_RECENT_ACTIVITY } from '@dashboard/types';
 import type { ActivityEntry } from '@dashboard/types';
 import { EventEmitter } from 'node:events';
 

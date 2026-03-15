@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TerminalOpenPayload } from '@dashboard/types';
 
-interface Agent {
+interface SessionInfo {
   pid: number;
   projectName?: string;
   tmux?: { session: string; window: string; pane: string };
@@ -11,7 +11,7 @@ interface TerminalContextMenuProps {
   x: number;
   y: number;
   paneId: string;
-  availableAgents: Agent[];
+  availableSessions: SessionInfo[];
   attachedPids: Set<number>;
   onSplit: (paneId: string, direction: 'horizontal' | 'vertical', payload: TerminalOpenPayload) => void;
   onClose: (paneId: string) => void;
@@ -22,7 +22,7 @@ export function TerminalContextMenu({
   x,
   y,
   paneId,
-  availableAgents,
+  availableSessions,
   attachedPids,
   onSplit,
   onClose,
@@ -41,21 +41,21 @@ export function TerminalContextMenu({
     return () => document.removeEventListener('mousedown', handler);
   }, [onDismiss]);
 
-  const unattachedAgents = availableAgents.filter(
-    (a) => a.tmux && !attachedPids.has(a.pid),
+  const unattachedSessions = availableSessions.filter(
+    (s) => s.tmux && !attachedPids.has(s.pid),
   );
 
   const renderSubMenu = (direction: 'horizontal' | 'vertical') => {
     if (hoveredDirection !== direction) return null;
     return (
       <div className="absolute left-full top-0 bg-gray-800 border border-gray-700 rounded shadow-lg min-w-[180px] py-1 z-50">
-        {unattachedAgents.map((agent) => (
+        {unattachedSessions.map((session) => (
           <button
-            key={agent.pid}
+            key={session.pid}
             className="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700"
-            onClick={() => onSplit(paneId, direction, { mode: 'attach', sessionPid: agent.pid })}
+            onClick={() => onSplit(paneId, direction, { mode: 'attach', sessionPid: session.pid })}
           >
-            session-{agent.pid} ({agent.projectName || 'unknown'})
+            session-{session.pid} ({session.projectName || 'unknown'})
           </button>
         ))}
         <div className="border-t border-gray-700 my-1" />

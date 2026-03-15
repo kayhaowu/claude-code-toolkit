@@ -112,7 +112,7 @@ export function TerminalContainer() {
           x={contextMenu.x}
           y={contextMenu.y}
           paneId={contextMenu.paneId}
-          availableAgents={availableSessions}
+          availableSessions={availableSessions}
           attachedPids={attachedPids}
           onSplit={handleSplit}
           onClose={handleClose}

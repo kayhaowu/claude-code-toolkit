@@ -67,6 +67,9 @@ export function SessionCard({ session }: { session: Session }) {
         <span className={`w-2.5 h-2.5 rounded-full ${statusColors[session.status]}`} />
         <span className="font-medium truncate">{session.projectName}</span>
       </div>
+      {session.gitBranch && (
+        <div className="text-xs text-blue-400 mb-1 truncate">⎇ {session.gitBranch}</div>
+      )}
 
       <div className="text-xs text-gray-400 space-y-1">
         <div>PID: {session.pid} &middot; tmux: {session.tmux.windowName || '—'}</div>

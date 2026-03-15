@@ -20,9 +20,6 @@ COPY frontend/ ./frontend/
 # Build frontend
 RUN cd frontend && pnpm build
 
-# Build backend
-RUN cd backend && pnpm build
-
 EXPOSE 3141
 
-CMD ["node", "backend/dist/index.js"]
+CMD ["npx", "tsx", "backend/src/index.ts"]

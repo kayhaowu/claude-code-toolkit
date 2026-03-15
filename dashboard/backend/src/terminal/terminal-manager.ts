@@ -37,7 +37,7 @@ export class TerminalManager extends EventEmitter {
 
     const tmuxTarget = `${session.tmux.session}:${session.tmux.window}.${session.tmux.pane}`;
     const id = generateId();
-    const title = `agent-${sessionPid}`;
+    const title = `session-${sessionPid}`;
     const groupedSessionName = `claude-view-${id}`;
 
     // Create a grouped session so each viewer gets an independent view
