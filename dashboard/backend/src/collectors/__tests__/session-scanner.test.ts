@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSessionJson, parseHeartbeat } from '../session-scanner.js';
+import { parseSessionJson, parseHeartbeat } from '../session-scanner.ts';
 
 describe('parseSessionJson', () => {
   it('parses a valid session.json into AgentSession fields', () => {

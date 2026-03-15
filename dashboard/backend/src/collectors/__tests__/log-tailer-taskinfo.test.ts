@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractTaskInfo } from '../log-tailer.js';
+import { extractTaskInfo } from '../log-tailer.ts';
 
 describe('extractTaskInfo', () => {
   it('extracts taskSubject from TaskCreate tool use', () => {

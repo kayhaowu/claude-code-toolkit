@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseTmuxOutput, mapPidToTmux } from '../tmux-mapper.js';
+import { parseTmuxOutput, mapPidToTmux } from '../tmux-mapper.ts';
 
 describe('parseTmuxOutput', () => {
   it('parses tmux list-panes output into a tty map', () => {

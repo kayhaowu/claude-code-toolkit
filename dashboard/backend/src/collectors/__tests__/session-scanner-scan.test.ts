@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { scanSessions } from '../session-scanner.js';
+import { scanSessions } from '../session-scanner.ts';
 
 describe('scanSessions', () => {
   it('returns AgentSession array from file system data', async () => {

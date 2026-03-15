@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { SessionStore } from '../store/session-store.js';
+import type { SessionStore } from '../store/session-store.ts';
 
 interface HookEventBody {
   event?: string;

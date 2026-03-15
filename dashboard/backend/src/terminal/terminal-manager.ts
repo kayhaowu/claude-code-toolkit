@@ -4,8 +4,8 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import * as pty from 'node-pty';
-import type { TerminalSession, TerminalOpenPayload } from '@dashboard/types';
-import type { SessionStore } from '../store/session-store.js';
+import type { TerminalSession, TerminalOpenPayload } from '../types/index.ts';
+import type { SessionStore } from '../store/session-store.ts';
 
 interface SessionEntry {
   pty: pty.IPty;

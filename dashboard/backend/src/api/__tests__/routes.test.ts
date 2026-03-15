@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import { SessionStore } from '../../store/session-store.js';
-import { createApiRouter } from '../routes.js';
-import { createHookRouter } from '../../collectors/hook-receiver.js';
-import type { Session } from '@dashboard/types';
+import { SessionStore } from '../../store/session-store.ts';
+import { createApiRouter } from '../routes.ts';
+import { createHookRouter } from '../../collectors/hook-receiver.ts';
+import type { Session } from '../../types/index.ts';
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {

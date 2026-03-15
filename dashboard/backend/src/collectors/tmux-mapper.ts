@@ -1,4 +1,4 @@
-import type { TmuxInfo } from '@dashboard/types';
+import type { TmuxInfo } from '../types/index.ts';
 import { readlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';

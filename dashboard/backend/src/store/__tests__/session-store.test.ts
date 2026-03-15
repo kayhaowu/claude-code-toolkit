@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SessionStore } from '../session-store.js';
-import type { Session } from '@dashboard/types';
-import { PHANTOM_TTL_MS, ACTIVITY_STALENESS_MS } from '@dashboard/types';
+import { SessionStore } from '../session-store.ts';
+import type { Session } from '../../types/index.ts';
+import { PHANTOM_TTL_MS, ACTIVITY_STALENESS_MS } from '../../types/index.ts';
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {

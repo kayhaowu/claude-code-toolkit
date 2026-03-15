@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseHookEvent } from '../hook-receiver.js';
+import { parseHookEvent } from '../hook-receiver.ts';
 
 describe('parseHookEvent', () => {
   it('parses a PostToolUse hook event', () => {

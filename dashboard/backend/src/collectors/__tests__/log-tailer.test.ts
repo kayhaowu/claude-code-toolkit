@@ -1,6 +1,6 @@
 // packages/server/src/collectors/__tests__/log-tailer.test.ts
 import { describe, it, expect } from 'vitest';
-import { parseJsonlLine, findProjectSlugDir } from '../log-tailer.js';
+import { parseJsonlLine, findProjectSlugDir } from '../log-tailer.ts';
 
 describe('parseJsonlLine', () => {
   it('extracts tool_use activity from assistant message', () => {

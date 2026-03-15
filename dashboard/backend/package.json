@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "node --experimental-strip-types --experimental-transform-types --watch src/index.ts",
     "build": "tsc",
-    "start": "tsx src/index.ts",
+    "start": "node --experimental-strip-types --experimental-transform-types src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
