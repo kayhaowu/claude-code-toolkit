@@ -40,7 +40,9 @@ export interface Session {
   memKb: number;
   tmux: TmuxInfo;
   status: 'working' | 'idle' | 'stopped';
+  /** Session start time (epoch milliseconds) */
   startedAt: number;
+  /** Last heartbeat time (epoch milliseconds) */
   lastHeartbeat: number;
   taskInfo: TaskInfo;
   currentActivity: CurrentActivity;

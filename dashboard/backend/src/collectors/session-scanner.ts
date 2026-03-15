@@ -38,7 +38,7 @@ export function parseSessionJson(raw: RawSessionJson): Pick<
     tokensIn: raw.tokens_in,
     tokensOut: raw.tokens_out,
     memKb: raw.mem_kb,
-    startedAt: raw.epoch,
+    startedAt: raw.epoch * 1000,
   };
 }
 
@@ -49,7 +49,7 @@ export function parseHeartbeat(raw: RawHeartbeat): {
 } {
   return {
     status: raw.status === 'working' ? 'working' : 'idle',
-    lastHeartbeat: raw.heartbeat_at,
+    lastHeartbeat: raw.heartbeat_at * 1000,
     memKb: raw.mem_kb,
   };
 }

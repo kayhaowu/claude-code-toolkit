@@ -9,7 +9,7 @@ const statusColors: Record<string, string> = {
 };
 
 function formatUptime(startedAt: number): string {
-  const diff = Date.now() - startedAt * 1000;
+  const diff = Date.now() - startedAt;
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
@@ -26,7 +26,7 @@ function formatTokens(n: number): string {
 
 /** Returns how long ago the heartbeat was, in human-readable form */
 function formatHeartbeatAge(lastHeartbeat: number): string {
-  const ageMs = Date.now() - lastHeartbeat * 1000;
+  const ageMs = Date.now() - lastHeartbeat;
   const secs = Math.floor(ageMs / 1000);
   if (secs < 10) return 'just now';
   if (secs < 60) return `${secs}s ago`;
@@ -36,7 +36,7 @@ function formatHeartbeatAge(lastHeartbeat: number): string {
 
 /** Returns a color class based on heartbeat freshness */
 function heartbeatColor(lastHeartbeat: number): string {
-  const ageMs = Date.now() - lastHeartbeat * 1000;
+  const ageMs = Date.now() - lastHeartbeat;
   if (ageMs < 10_000) return 'text-green-400';
   if (ageMs < 30_000) return 'text-yellow-400';
   return 'text-red-400';
