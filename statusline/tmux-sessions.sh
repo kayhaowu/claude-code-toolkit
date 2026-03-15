@@ -59,10 +59,17 @@ EOF
         idle*|IDLE*)        _icon="💤" ;;
         *)                  _icon="·" ;;
     esac
+    # Status color (Catppuccin Mocha)
+    case "$_status" in
+        working*|WORKING*) _color="#f9e2af" ;;  # yellow
+        done*)              _color="#a6e3a1" ;;  # green
+        idle*|IDLE*)        _color="#89b4fa" ;;  # blue
+        *)                  _color="#6c7086" ;;  # overlay1
+    esac
     if [ -n "$_out" ]; then
-        _out="${_out} │ "
+        _out="${_out}#[fg=#bd93f9] │ "
     fi
-    _out="${_out}${_icon}${_name} ${_pct}%"
+    _out="${_out}#[fg=${_color}]${_icon}${_name} ${_pct}%"
     _count=$(( _count + 1 ))
 done
 
