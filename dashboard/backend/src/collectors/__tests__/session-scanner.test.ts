@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSessionJson, parseHeartbeat } from '../session-scanner.ts';
+import { parseSessionJson, parseHeartbeat, parseStatusFile } from '../session-scanner.ts';
 
 describe('parseSessionJson', () => {
   it('parses a valid session.json into AgentSession fields', () => {
@@ -48,5 +48,27 @@ describe('parseHeartbeat', () => {
     const raw = { heartbeat_at: 1773129523, mem_kb: 100000, status: 'working' };
     const result = parseHeartbeat(raw);
     expect(result.status).toBe('working');
+  });
+});
+
+describe('parseStatusFile', () => {
+  it('parses working status', () => {
+    expect(parseStatusFile('working 1773129523')).toEqual({ status: 'working', epoch: 1773129523 });
+  });
+
+  it('parses idle status', () => {
+    expect(parseStatusFile('idle 1773129500')).toEqual({ status: 'idle', epoch: 1773129500 });
+  });
+
+  it('treats unknown status as idle', () => {
+    expect(parseStatusFile('done 1773129500')).toEqual({ status: 'idle', epoch: 1773129500 });
+  });
+
+  it('returns null for empty content', () => {
+    expect(parseStatusFile('')).toBeNull();
+  });
+
+  it('returns null for invalid epoch', () => {
+    expect(parseStatusFile('working abc')).toBeNull();
   });
 });

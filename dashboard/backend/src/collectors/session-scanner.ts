@@ -56,9 +56,20 @@ export function parseHeartbeat(raw: RawHeartbeat): {
 
 const SESSIONS_DIR = join(process.env.HOME ?? '', '.claude', 'sessions');
 
+export function parseStatusFile(content: string): { status: 'working' | 'idle'; epoch: number } | null {
+  const parts = content.trim().split(/\s+/);
+  if (parts.length < 2) return null;
+  const [rawStatus, rawEpoch] = parts;
+  const epoch = Number(rawEpoch);
+  if (isNaN(epoch)) return null;
+  const status = rawStatus === 'working' ? 'working' as const : 'idle' as const;
+  return { status, epoch };
+}
+
 export interface ScanDeps {
   listSessionFiles: () => Promise<string[]>;
   readJson: (path: string) => Promise<unknown>;
+  readText: (path: string) => Promise<string>;
   isProcessAlive: (pid: number) => boolean;
   getTmuxMap: () => Promise<Map<string, TmuxInfo>>;
   readPidTty: (pid: number) => Promise<string | null>;
@@ -72,6 +83,9 @@ const defaultDeps: ScanDeps = {
   async readJson(path: string) {
     const data = await readFile(path, 'utf-8');
     return JSON.parse(data);
+  },
+  async readText(path: string) {
+    return await readFile(path, 'utf-8');
   },
   isProcessAlive(pid: number) {
     try {
@@ -107,17 +121,34 @@ export async function scanSessions(deps: ScanDeps = defaultDeps): Promise<Sessio
       let memKb = parsed.memKb;
 
       if (alive) {
+        // 1. Read .status file (event-driven, authoritative for status)
+        try {
+          const statusContent = await deps.readText(join(SESSIONS_DIR, `${pid}.status`));
+          const statusParsed = parseStatusFile(statusContent);
+          if (statusParsed) {
+            status = statusParsed.status;
+          }
+        } catch {
+          // .status file may not exist yet — fall through to heartbeat
+        }
+
+        // 2. Read heartbeat (periodic, authoritative for lastHeartbeat/memKb)
         try {
           const hb = await deps.readJson(join(SESSIONS_DIR, `${pid}.hb.dat`)) as any;
           const hbParsed = parseHeartbeat(hb);
-          status = hbParsed.status;
+          // Only use heartbeat status if .status file wasn't available
+          if (status === 'stopped') {
+            status = hbParsed.status;
+          }
           lastHeartbeat = hbParsed.lastHeartbeat;
           memKb = hbParsed.memKb;
         } catch (err: any) {
           if (err?.code !== 'ENOENT') {
             console.warn(`[scan] Failed to read heartbeat for PID ${pid}:`, err);
           }
-          status = 'idle';
+          if (status === 'stopped') {
+            status = 'idle';
+          }
         }
       }
 

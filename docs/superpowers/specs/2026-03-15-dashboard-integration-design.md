@@ -112,12 +112,13 @@ This avoids `tsx` ESM module resolution issues with Node v24. No separate build 
 
 ### Data Sources
 
-| Source | Reader | Frequency |
-|--------|--------|-----------|
-| `~/.claude/sessions/{PID}.json` | SessionScanner | Polling every 2s |
-| `~/.claude/sessions/{PID}.hb.dat` | SessionScanner | Polling every 2s |
-| `~/.claude/projects/{slug}/*.jsonl` | LogTailer | fs.watch (event-driven) |
-| `tmux list-panes -a` (tab-delimited) | TmuxMapper | Polling every 2s (with scanner) |
+| Source | Reader | Frequency | Provides |
+|--------|--------|-----------|----------|
+| `~/.claude/sessions/{PID}.json` | SessionScanner | Polling every 2s | PID, project, model, tokens, cost, git branch |
+| `~/.claude/sessions/{PID}.status` | SessionScanner | Polling every 2s | **status** (authoritative, event-driven source) |
+| `~/.claude/sessions/{PID}.hb.dat` | SessionScanner | Polling every 2s | lastHeartbeat, memKb, status (fallback) |
+| `~/.claude/projects/{slug}/*.jsonl` | LogTailer | fs.watch (event-driven) | currentActivity, taskInfo |
+| `tmux list-panes -a` (tab-delimited) | TmuxMapper | Polling every 2s (with scanner) | tmux session/window/pane mapping |
 
 ### TaskInfo Type (Replaces TicketInfo)
 
@@ -143,9 +144,10 @@ All timestamps are in **epoch milliseconds** (matching `Date.now()`):
 
 - **Immutable updates**: `updateActivity()` and `updateTaskInfo()` create new Session objects via spread, never mutate in-place
 - **Status and activity are independent concerns**:
-  - `status` (working/idle/stopped): **heartbeat file is authoritative**. SessionScanner reads it every 2s. The store never overrides this value from other sources.
+  - `status` (working/idle/stopped): **`.status` file is authoritative** (event-driven, written by `status-hook.sh` on UserPromptSubmit/PostToolUse/Stop events). SessionScanner reads `~/.claude/sessions/{PID}.status` first, falls back to `.hb.dat` heartbeat if `.status` not available. This matches the same priority used by `tmux-sessions.sh`.
   - `currentActivity` (which tool is in use): **LogTailer is the source**. Detected from JSONL logs in near real-time. Has a 120s staleness timeout — if no new activity for 2 minutes, resets to idle.
   - These are displayed separately on the SessionCard: status badge (green/yellow/red dot) vs. activity text (tool name or "idle").
+  - The store never overrides scan-provided status — it trusts the scanner's result which reflects the `.status` file.
 - **Phantom TTL**: Stopped sessions remain visible for 30s before removal
 - **Activity staleness**: Resets to idle if no heartbeat for 2 minutes
 - **Event-driven**: Emits `session:updated` and `session:removed` events
@@ -290,8 +292,8 @@ Client → Server:
 
 ## Testing
 
-- Backend: 64 tests across 9 files (session-store, routes, session-scanner, log-tailer, log-tailer-taskinfo, tmux-mapper, hook-receiver, terminal-manager)
-- Frontend: 43 tests across 6 files (SessionCard, TerminalContextMenu, use-socket, use-terminal-socket, session-store, terminal-store)
+- Backend: 70 tests across 9 files (session-store, routes, session-scanner, session-scanner-scan, log-tailer, log-tailer-taskinfo, tmux-mapper, hook-receiver, terminal-manager)
+- Frontend: 48 tests across 6 files (SessionCard, TerminalContextMenu, use-socket, use-terminal-socket, session-store, terminal-store)
 - Both `tsc --noEmit` clean
 
 ## Decisions (Resolved)
