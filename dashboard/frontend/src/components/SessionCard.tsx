@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Session } from '@dashboard/types';
 import { useSessionStore } from '../store/session-store.js';
+import { useTerminalStore } from '../store/terminal-store.js';
+import { acquireSocket } from '../hooks/socket.js';
 
 const statusColors: Record<string, string> = {
   working: 'bg-green-500',
@@ -98,6 +100,20 @@ export function SessionCard({ session }: { session: Session }) {
             {formatHeartbeatAge(session.lastHeartbeat)}
           </span>
         </div>
+
+        {session.status !== 'stopped' && session.tmux.session && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const socket = acquireSocket();
+              socket.emit('terminal:open', { mode: 'attach', sessionPid: session.pid });
+              useTerminalStore.getState().openPane(`pending-${session.pid}`);
+            }}
+            className="mt-2 w-full py-1 px-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs border border-gray-700"
+          >
+            Open Terminal
+          </button>
+        )}
       </div>
     </div>
   );

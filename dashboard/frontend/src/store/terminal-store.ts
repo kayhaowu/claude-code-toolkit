@@ -20,6 +20,8 @@ interface TerminalStoreState {
   setSessions: (sessions: TerminalSession[]) => void;
   addSession: (session: TerminalSession) => void;
   removeSession: (id: string) => void;
+  openPane: (sessionId: string) => void;
+  replacePaneSession: (oldSessionId: string, newSessionId: string) => void;
   splitPane: (paneId: string, direction: 'horizontal' | 'vertical', sessionId: string) => void;
   closePane: (paneId: string) => void;
   setActivePane: (paneId: string) => void;
@@ -152,6 +154,32 @@ export const useTerminalStore = create<TerminalStoreState>((set, get) => ({
   },
 
   setActivePane: (paneId) => set({ activePaneId: paneId }),
+
+  replacePaneSession: (oldSessionId, newSessionId) => {
+    const { layout } = get();
+    if (!layout) return;
+    const replace = (node: SplitLayout): SplitLayout => {
+      if (node.type === 'terminal') {
+        return node.sessionId === oldSessionId ? { ...node, sessionId: newSessionId } : node;
+      }
+      return { ...node, children: [replace(node.children[0]), replace(node.children[1])] };
+    };
+    set({ layout: replace(layout) });
+  },
+
+  openPane: (sessionId) => {
+    const { layout } = get();
+    const paneId = nextPaneId();
+    if (!layout) {
+      set({ layout: { type: 'terminal', paneId, sessionId }, activePaneId: paneId });
+    } else {
+      // Add to existing layout by splitting the active pane
+      const { activePaneId } = get();
+      const targetPane = activePaneId ?? findFirstPaneId(layout);
+      const result = splitNode(layout, targetPane, 'horizontal', sessionId);
+      if (result) set({ layout: result, activePaneId: paneId });
+    }
+  },
 
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),

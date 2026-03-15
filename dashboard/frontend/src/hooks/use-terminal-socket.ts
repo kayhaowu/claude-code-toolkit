@@ -40,6 +40,10 @@ export function useTerminalSocket(): React.RefObject<ReturnType<typeof acquireSo
 
     const onOpened = (event: { session: TerminalSession }) => {
       store.addSession(event.session);
+      // Replace pending pane with real session ID
+      if (event.session.mode === 'attach' && event.session.sessionPid) {
+        store.replacePaneSession(`pending-${event.session.sessionPid}`, event.session.id);
+      }
       persistSessionIds(useTerminalStore.getState().sessions);
     };
 
