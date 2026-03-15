@@ -169,4 +169,86 @@ describe('useTerminalStore', () => {
       }
     });
   });
+
+  describe('openPane', () => {
+    beforeEach(() => {
+      useTerminalStore.setState({ layout: null, activePaneId: null });
+    });
+
+    it('creates initial layout when no layout exists', () => {
+      useTerminalStore.getState().openPane('sess-1');
+
+      const { layout, activePaneId } = useTerminalStore.getState();
+      expect(layout).not.toBeNull();
+      expect(layout?.type).toBe('terminal');
+      if (layout?.type === 'terminal') {
+        expect(layout.sessionId).toBe('sess-1');
+        expect(activePaneId).toBe(layout.paneId);
+      }
+    });
+
+    it('splits existing layout when layout already exists', () => {
+      // First pane
+      useTerminalStore.getState().openPane('sess-1');
+      const firstLayout = useTerminalStore.getState().layout;
+      expect(firstLayout?.type).toBe('terminal');
+
+      // Second pane — should split
+      useTerminalStore.getState().openPane('sess-2');
+      const { layout } = useTerminalStore.getState();
+      expect(layout?.type).toBe('split');
+      if (layout?.type === 'split') {
+        expect(layout.direction).toBe('horizontal');
+        expect(layout.children[0].type).toBe('terminal');
+        expect(layout.children[1].type).toBe('terminal');
+        if (layout.children[0].type === 'terminal' && layout.children[1].type === 'terminal') {
+          expect(layout.children[0].sessionId).toBe('sess-1');
+          expect(layout.children[1].sessionId).toBe('sess-2');
+        }
+      }
+    });
+  });
+
+  describe('replacePaneSession', () => {
+    beforeEach(() => {
+      useTerminalStore.setState({ layout: null, activePaneId: null });
+    });
+
+    it('replaces sessionId in a single terminal layout', () => {
+      useTerminalStore.getState().openPane('pending-123');
+      useTerminalStore.getState().replacePaneSession('pending-123', 'real-abc');
+
+      const { layout } = useTerminalStore.getState();
+      expect(layout?.type).toBe('terminal');
+      if (layout?.type === 'terminal') {
+        expect(layout.sessionId).toBe('real-abc');
+      }
+    });
+
+    it('replaces sessionId in a split layout', () => {
+      useTerminalStore.getState().openPane('sess-1');
+      useTerminalStore.getState().openPane('pending-456');
+      useTerminalStore.getState().replacePaneSession('pending-456', 'real-def');
+
+      const { layout } = useTerminalStore.getState();
+      expect(layout?.type).toBe('split');
+      if (layout?.type === 'split') {
+        const second = layout.children[1];
+        expect(second.type).toBe('terminal');
+        if (second.type === 'terminal') {
+          expect(second.sessionId).toBe('real-def');
+        }
+      }
+    });
+
+    it('does nothing when oldSessionId not found', () => {
+      useTerminalStore.getState().openPane('sess-1');
+      const before = useTerminalStore.getState().layout;
+
+      useTerminalStore.getState().replacePaneSession('nonexistent', 'new-id');
+
+      const after = useTerminalStore.getState().layout;
+      expect(after).toEqual(before);
+    });
+  });
 });
