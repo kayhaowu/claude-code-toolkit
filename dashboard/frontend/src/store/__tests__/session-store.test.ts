@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useSessionStore } from '../session-store.js';
+import { renderHook } from '@testing-library/react';
+import { useSessionStore, useSortedSessions } from '../session-store.js';
 import type { Session } from '@dashboard/types';
 
 function makeSession(overrides: Partial<Session>): Session {
@@ -46,5 +47,77 @@ describe('useSessionStore', () => {
     const { filter } = useSessionStore.getState();
     expect(filter.search).toBe('test');
     expect(filter.status).toBe('working');
+  });
+});
+
+describe('useSortedSessions', () => {
+  beforeEach(() => {
+    useSessionStore.getState().setSnapshot([]);
+    useSessionStore.getState().setFilter({ status: null, search: '' });
+  });
+
+  it('filters by status — only working sessions returned', () => {
+    const working = makeSession({ id: '1', status: 'working' });
+    const idle = makeSession({ id: '2', status: 'idle' });
+    const stopped = makeSession({ id: '3', status: 'stopped' });
+    useSessionStore.getState().setSnapshot([working, idle, stopped]);
+    useSessionStore.getState().setFilter({ status: 'working' });
+
+    const { result } = renderHook(() => useSortedSessions());
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].id).toBe('1');
+  });
+
+  it('searches by projectName', () => {
+    const match = makeSession({ id: '1', projectName: 'my-awesome-project' });
+    const noMatch = makeSession({ id: '2', projectName: 'other-project' });
+    useSessionStore.getState().setSnapshot([match, noMatch]);
+    useSessionStore.getState().setFilter({ search: 'awesome' });
+
+    const { result } = renderHook(() => useSortedSessions());
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].id).toBe('1');
+  });
+
+  it('searches by gitBranch', () => {
+    const match = makeSession({ id: '1', gitBranch: 'feat/login-page' });
+    const noMatch = makeSession({ id: '2', gitBranch: 'main' });
+    useSessionStore.getState().setSnapshot([match, noMatch]);
+    useSessionStore.getState().setFilter({ search: 'login' });
+
+    const { result } = renderHook(() => useSortedSessions());
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].id).toBe('1');
+  });
+
+  it('searches by taskInfo.taskSubject', () => {
+    const match = makeSession({ id: '1', taskInfo: { taskSubject: 'Implement auth flow' } });
+    const noMatch = makeSession({ id: '2', taskInfo: { taskSubject: 'Fix typo' } });
+    useSessionStore.getState().setSnapshot([match, noMatch]);
+    useSessionStore.getState().setFilter({ search: 'auth' });
+
+    const { result } = renderHook(() => useSortedSessions());
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].id).toBe('1');
+  });
+
+  it('sorts working before idle before stopped', () => {
+    const stopped = makeSession({ id: '3', status: 'stopped' });
+    const working = makeSession({ id: '1', status: 'working' });
+    const idle = makeSession({ id: '2', status: 'idle' });
+    useSessionStore.getState().setSnapshot([stopped, idle, working]);
+
+    const { result } = renderHook(() => useSortedSessions());
+    expect(result.current.map(s => s.status)).toEqual(['working', 'idle', 'stopped']);
+  });
+
+  it('does not crash when gitBranch is null', () => {
+    const session = makeSession({ id: '1', gitBranch: null });
+    useSessionStore.getState().setSnapshot([session]);
+    useSessionStore.getState().setFilter({ search: 'anything' });
+
+    const { result } = renderHook(() => useSortedSessions());
+    // Should not throw; result may be empty since projectName 'test' doesn't match 'anything'
+    expect(result.current).toHaveLength(0);
   });
 });

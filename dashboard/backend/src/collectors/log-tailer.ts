@@ -15,6 +15,30 @@ interface ParsedActivity {
   timestamp: number;
 }
 
+export function extractTaskInfo(parsed: any): { taskSubject?: string; commitMessage?: string } | null {
+  if (parsed.type === 'assistant') {
+    const content = parsed.message?.content;
+    if (Array.isArray(content)) {
+      for (const block of content) {
+        if (block.type === 'tool_use' && block.name === 'TaskCreate') {
+          return { taskSubject: block.input?.subject };
+        }
+        if (block.type === 'tool_use' && block.name === 'TaskUpdate' && block.input?.subject) {
+          return { taskSubject: block.input.subject };
+        }
+      }
+    }
+  }
+  if (parsed.type === 'result') {
+    const text = typeof parsed.result === 'string' ? parsed.result : '';
+    const commitMatch = text.match(/\[[\w/-]+\s+[\da-f]+\]\s+(.+)/);
+    if (commitMatch) {
+      return { commitMessage: commitMatch[1] };
+    }
+  }
+  return null;
+}
+
 export function parseJsonlLine(line: any): ParsedActivity | null {
   if (line.type !== 'assistant') return null;
   const content = line.message?.content;
@@ -165,37 +189,23 @@ export class LogTailer extends EventEmitter {
     const rl = createInterface({ input: stream });
 
     for await (const line of rl) {
+      let parsed: any;
       try {
-        const parsed = JSON.parse(line);
+        parsed = JSON.parse(line);
+      } catch {
+        continue; // skip malformed JSON
+      }
+      try {
         const activity = parseJsonlLine(parsed);
         if (activity) {
           this.emit('activity', { pid, activity });
         }
-
-        // Extract task info from tool use events
-        if (parsed.type === 'assistant') {
-          const content = parsed.message?.content;
-          if (Array.isArray(content)) {
-            for (const block of content) {
-              if (block.type === 'tool_use' && block.name === 'TaskCreate') {
-                this.emit('taskInfo', { pid, taskSubject: block.input?.subject });
-              }
-              if (block.type === 'tool_use' && block.name === 'TaskUpdate' && block.input?.subject) {
-                this.emit('taskInfo', { pid, taskSubject: block.input.subject });
-              }
-            }
-          }
+        const taskInfo = extractTaskInfo(parsed);
+        if (taskInfo) {
+          this.emit('taskInfo', { pid, ...taskInfo });
         }
-        // Detect git commit messages from tool results
-        if (parsed.type === 'result') {
-          const text = typeof parsed.result === 'string' ? parsed.result : '';
-          const commitMatch = text.match(/\[[\w/-]+\s+[\da-f]+\]\s+(.+)/);
-          if (commitMatch) {
-            this.emit('taskInfo', { pid, commitMessage: commitMatch[1] });
-          }
-        }
-      } catch {
-        // skip malformed lines
+      } catch (err) {
+        console.warn(`[log-tailer] Error processing line for PID ${pid}:`, err);
       }
     }
 

@@ -9,20 +9,24 @@ export function useSocket() {
   useEffect(() => {
     const socket = acquireSocket();
 
-    socket.on('sessions:snapshot', (event: WSEvent & { type: 'sessions:snapshot' }) => {
+    const onSnapshot = (event: WSEvent & { type: 'sessions:snapshot' }) => {
       setSnapshot(event.sessions);
-    });
-    socket.on('session:updated', (event: WSEvent & { type: 'session:updated' }) => {
+    };
+    const onUpdated = (event: WSEvent & { type: 'session:updated' }) => {
       updateSession(event.session);
-    });
-    socket.on('session:removed', (event: WSEvent & { type: 'session:removed' }) => {
+    };
+    const onRemoved = (event: WSEvent & { type: 'session:removed' }) => {
       removeSession(event.id);
-    });
+    };
+
+    socket.on('sessions:snapshot', onSnapshot);
+    socket.on('session:updated', onUpdated);
+    socket.on('session:removed', onRemoved);
 
     return () => {
-      socket.off('sessions:snapshot');
-      socket.off('session:updated');
-      socket.off('session:removed');
+      socket.off('sessions:snapshot', onSnapshot);
+      socket.off('session:updated', onUpdated);
+      socket.off('session:removed', onRemoved);
       releaseSocket();
     };
   }, [setSnapshot, updateSession, removeSession]);
