@@ -1,0 +1,12 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "127.0.0.1:3141:3141"
+    volumes:
+      - "${HOME}/.claude:/root/.claude:ro"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3141
+      - HOME=/root
+    restart: unless-stopped
