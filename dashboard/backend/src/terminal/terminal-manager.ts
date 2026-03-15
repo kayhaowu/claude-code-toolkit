@@ -112,7 +112,8 @@ export class TerminalManager extends EventEmitter {
     if (cwd) {
       const resolved = resolve(cwd);
       const home = homedir();
-      if (!resolved.startsWith(home) && !resolved.startsWith('/tmp')) {
+      const homePrefix = home.endsWith('/') ? home : home + '/';
+      if (resolved !== home && !resolved.startsWith(homePrefix) && resolved !== '/tmp' && !resolved.startsWith('/tmp/') && resolved !== '/private/tmp' && !resolved.startsWith('/private/tmp/')) {
         throw new Error(`cwd must be under home directory or /tmp: ${resolved}`);
       }
       if (!existsSync(resolved)) {

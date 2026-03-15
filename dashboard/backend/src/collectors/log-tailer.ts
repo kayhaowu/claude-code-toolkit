@@ -109,7 +109,15 @@ export class LogTailer extends EventEmitter {
   private pidToFile = new Map<number, string>();
 
   async startTailing(pid: number, projectDir: string): Promise<void> {
-    const slugDirs = await readdir(PROJECTS_DIR).catch(() => []);
+    let slugDirs: string[];
+    try {
+      slugDirs = await readdir(PROJECTS_DIR);
+    } catch (err: any) {
+      if (err?.code !== 'ENOENT') {
+        console.warn(`[log-tailer] Cannot read projects dir ${PROJECTS_DIR}:`, err?.message ?? err);
+      }
+      return;
+    }
     const slugDir = findProjectSlugDir(projectDir, slugDirs);
     if (!slugDir) return;
 
@@ -179,7 +187,10 @@ export class LogTailer extends EventEmitter {
     try {
       const stat = statSync(filePath);
       size = stat.size;
-    } catch {
+    } catch (err: any) {
+      if (err?.code !== 'ENOENT') {
+        console.warn(`[log-tailer] statSync failed for ${filePath}:`, err?.message ?? err);
+      }
       this.handleFileRotation(pid, filePath);
       return;
     }

@@ -64,6 +64,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('terminal:input', ({ sessionId, data }: any) => {
+    if (typeof sessionId !== 'string' || typeof data !== 'string') return;
     try {
       terminalManager.write(sessionId, socket.id, data);
     } catch (err: any) {
@@ -73,7 +74,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('terminal:resize', ({ sessionId, cols, rows }: any) => {
-    if (typeof cols !== 'number' || typeof rows !== 'number' || cols <= 0 || rows <= 0) {
+    if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols <= 0 || rows <= 0 || cols > 500 || rows > 500) {
       socket.emit('terminal:error', { type: 'terminal:error', message: 'Invalid resize dimensions' });
       return;
     }
@@ -81,6 +82,7 @@ io.on('connection', (socket) => {
       terminalManager.resize(sessionId, socket.id, cols, rows);
     } catch (err: any) {
       console.error(`[terminal:resize] session=${sessionId}:`, err.message);
+      socket.emit('terminal:error', { type: 'terminal:error', sessionId, message: err.message });
     }
   });
 
@@ -115,7 +117,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    terminalManager.handleDisconnect(socket.id);
+    try {
+      terminalManager.handleDisconnect(socket.id);
+    } catch (err: any) {
+      console.error(`[disconnect] socketId=${socket.id}:`, err.message);
+    }
   });
 });
 

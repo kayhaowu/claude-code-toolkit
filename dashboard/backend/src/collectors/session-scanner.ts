@@ -74,7 +74,12 @@ const defaultDeps: ScanDeps = {
     return JSON.parse(data);
   },
   isProcessAlive(pid: number) {
-    try { process.kill(pid, 0); return true; } catch { return false; }
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (err: any) {
+      return err?.code === 'EPERM';
+    }
   },
   getTmuxMap: defaultGetTmuxMap,
   readPidTty: defaultReadPidTty,
