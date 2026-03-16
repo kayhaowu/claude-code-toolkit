@@ -75,23 +75,27 @@ export function TerminalPane({ paneId, sessionId, onContextMenu }: TerminalPaneP
       socket.emit('terminal:input', { sessionId, data });
     });
 
-    // Resize handling — only emit when dimensions actually change
+    // Resize handling — guard against layout oscillation
     let resizeTimer: ReturnType<typeof setTimeout>;
-    let lastCols = term.cols;
-    let lastRows = term.rows;
-    const observer = new ResizeObserver(() => {
+    let lastWidth = 0;
+    let lastHeight = 0;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      // Skip if container pixel size hasn't meaningfully changed (>1px threshold)
+      if (Math.abs(width - lastWidth) < 1 && Math.abs(height - lastHeight) < 1) return;
+      lastWidth = width;
+      lastHeight = height;
+
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         fit.fit();
-        if (term.cols !== lastCols || term.rows !== lastRows) {
-          lastCols = term.cols;
-          lastRows = term.rows;
-          socket.emit('terminal:resize', {
-            sessionId,
-            cols: term.cols,
-            rows: term.rows,
-          });
-        }
+        socket.emit('terminal:resize', {
+          sessionId,
+          cols: term.cols,
+          rows: term.rows,
+        });
       }, 150);
     });
     observer.observe(containerRef.current);

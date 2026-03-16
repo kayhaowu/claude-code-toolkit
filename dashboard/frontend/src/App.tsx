@@ -28,33 +28,37 @@ function MainContent() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <TabBar />
-      <div className="flex-1 overflow-auto">
-        {activeTab === 'terminal' && (
-          <div className="h-full flex flex-col">
-            {terminalError && (
-              <div className="bg-red-900/50 border-b border-red-700 px-4 py-2 text-sm text-red-200">
-                Terminal error: {terminalError}
-              </div>
-            )}
-            {layout ? (
-              <div className="flex-1">
-                <TerminalContainer />
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">
-                Click &quot;Open Terminal&quot; on a session to connect
-              </div>
-            )}
-          </div>
-        )}
-        {activeTab === 'activity' && <ActivityFeed />}
-        {activeTab === 'git' && (
-          <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">
-            Git integration coming in Phase 2b
-          </div>
-        )}
-        {activeTab === 'detail' && <SessionDetailPanel />}
-      </div>
+      {activeTab === 'terminal' && (
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          {terminalError && (
+            <div className="bg-red-900/50 border-b border-red-700 px-4 py-2 text-sm text-red-200 flex-shrink-0">
+              Terminal error: {terminalError}
+            </div>
+          )}
+          {layout ? (
+            <TerminalContainer />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">
+              Click &quot;Open Terminal&quot; on a session to connect
+            </div>
+          )}
+        </div>
+      )}
+      {activeTab === 'activity' && (
+        <div className="flex-1 overflow-auto">
+          <ActivityFeed />
+        </div>
+      )}
+      {activeTab === 'git' && (
+        <div className="flex-1 flex items-center justify-center text-gray-600 text-sm">
+          Git integration coming in Phase 2b
+        </div>
+      )}
+      {activeTab === 'detail' && (
+        <div className="flex-1 overflow-auto">
+          <SessionDetailPanel />
+        </div>
+      )}
     </div>
   );
 }
