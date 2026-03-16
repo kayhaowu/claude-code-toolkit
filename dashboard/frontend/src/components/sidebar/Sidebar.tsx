@@ -1,4 +1,7 @@
+import { useCallback, useMemo } from 'react';
 import { useSessionStore, useSortedSessions } from '../../store/session-store.js';
+import { useTerminalStore } from '../../store/terminal-store.js';
+import { acquireSocket, releaseSocket } from '../../hooks/socket.js';
 import { SidebarItem } from './SidebarItem.js';
 
 export function Sidebar() {
@@ -9,14 +12,27 @@ export function Sidebar() {
   const filter = useSessionStore(s => s.filter);
   const allSessions = useSessionStore(s => s.sessions);
 
-  const counts = {
-    all: allSessions.size,
-    working: Array.from(allSessions.values()).filter(s => s.status === 'working').length,
-    idle: Array.from(allSessions.values()).filter(s => s.status === 'idle').length,
-    stopped: Array.from(allSessions.values()).filter(s => s.status === 'stopped').length,
-  };
+  const { counts, totalCost } = useMemo(() => {
+    let working = 0, idle = 0, stopped = 0, cost = 0;
+    for (const s of allSessions.values()) {
+      if (s.status === 'working') working++;
+      else if (s.status === 'idle') idle++;
+      else if (s.status === 'stopped') stopped++;
+      cost += s.costUsd;
+    }
+    return {
+      counts: { all: allSessions.size, working, idle, stopped },
+      totalCost: cost,
+    };
+  }, [allSessions]);
 
-  const totalCost = Array.from(allSessions.values()).reduce((sum, s) => sum + s.costUsd, 0);
+  const handleOpenTerminal = useCallback((pid: number) => {
+    const socket = acquireSocket();
+    socket.emit('terminal:open', { mode: 'attach', sessionPid: pid });
+    releaseSocket(); // emit is enqueued synchronously, safe to release
+    useTerminalStore.getState().openPane(`pending-${pid}`);
+    useSessionStore.getState().setActiveTab('terminal');
+  }, []);
 
   return (
     <div className="w-[260px] border-r border-gray-800 flex flex-col bg-gray-950 flex-shrink-0">
@@ -65,6 +81,7 @@ export function Sidebar() {
             session={session}
             isSelected={selectedId === session.id}
             onSelect={setSelected}
+            onOpenTerminal={handleOpenTerminal}
           />
         ))}
         {sessions.length === 0 && (

@@ -1,14 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { Session } from '@dashboard/types';
 import { useSessionStore } from '../store/session-store.js';
 import { useTerminalStore } from '../store/terminal-store.js';
 import { acquireSocket } from '../hooks/socket.js';
-
-const statusColors: Record<string, string> = {
-  working: 'bg-green-500',
-  idle: 'bg-yellow-500',
-  stopped: 'bg-red-500',
-};
+import { formatTokens, formatHeartbeatAge, heartbeatColor, statusColors } from '../utils/format.js';
 
 function formatUptime(startedAt: number): string {
   const diff = Date.now() - startedAt;
@@ -18,30 +13,6 @@ function formatUptime(startedAt: number): string {
   if (hours < 24) return `${hours}h ${mins % 60}m`;
   const days = Math.floor(hours / 24);
   return `${days}d ${hours % 24}h`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
-  return String(n);
-}
-
-/** Returns how long ago the heartbeat was, in human-readable form */
-function formatHeartbeatAge(lastHeartbeat: number): string {
-  const ageMs = Date.now() - lastHeartbeat;
-  const secs = Math.floor(ageMs / 1000);
-  if (secs < 10) return 'just now';
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  return `${mins}m ago`;
-}
-
-/** Returns a color class based on heartbeat freshness */
-function heartbeatColor(lastHeartbeat: number): string {
-  const ageMs = Date.now() - lastHeartbeat;
-  if (ageMs < 10_000) return 'text-green-400';
-  if (ageMs < 30_000) return 'text-yellow-400';
-  return 'text-red-400';
 }
 
 export function SessionCard({ session }: { session: Session }) {
@@ -55,6 +26,8 @@ export function SessionCard({ session }: { session: Session }) {
     const interval = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const heartbeatAgeMs = Date.now() - session.lastHeartbeat;
 
   return (
     <div
@@ -96,8 +69,8 @@ export function SessionCard({ session }: { session: Session }) {
 
         <div className="flex items-center justify-between">
           <span className="text-gray-500">uptime: {formatUptime(session.startedAt)}</span>
-          <span className={`${heartbeatColor(session.lastHeartbeat)}`} title={`Last heartbeat: ${formatHeartbeatAge(session.lastHeartbeat)}`}>
-            {formatHeartbeatAge(session.lastHeartbeat)}
+          <span className={`${heartbeatColor(heartbeatAgeMs)}`} title={`Last heartbeat: ${formatHeartbeatAge(heartbeatAgeMs)}`}>
+            {formatHeartbeatAge(heartbeatAgeMs)}
           </span>
         </div>
 
