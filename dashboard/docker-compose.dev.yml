@@ -1,5 +1,5 @@
 services:
-  backend:
+  dashboard:
     build: .
     command: ["node", "--experimental-strip-types", "--experimental-transform-types", "--watch", "backend/src/index.ts"]
     ports:
@@ -8,24 +8,10 @@ services:
       - "${HOME}/.claude:/root/.claude:ro"
       - ./types:/app/types
       - ./backend/src:/app/backend/src
-      - ./frontend/dist:/app/frontend/dist:ro
+      - ./frontend/dist:/app/frontend/dist
+      - ./tsconfig.base.json:/app/tsconfig.base.json
     environment:
       - HOST=0.0.0.0
       - PORT=3141
       - HOME=/root
     restart: unless-stopped
-
-  frontend:
-    build: .
-    command: ["sh", "-c", "cd frontend && pnpm build --watch"]
-    volumes:
-      - ./types:/app/types
-      - ./frontend/src:/app/frontend/src
-      - ./frontend/dist:/app/frontend/dist
-      - ./frontend/index.html:/app/frontend/index.html
-      - ./frontend/public:/app/frontend/public
-      - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
-      - ./frontend/tailwind.config.js:/app/frontend/tailwind.config.js
-      - ./frontend/postcss.config.js:/app/frontend/postcss.config.js
-    environment:
-      - HOME=/root
