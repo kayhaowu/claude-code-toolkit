@@ -121,3 +121,28 @@ describe('useSortedSessions', () => {
     expect(result.current).toHaveLength(0);
   });
 });
+
+describe('activeTab', () => {
+  beforeEach(() => {
+    useSessionStore.setState({ activeTab: 'terminal' });
+  });
+
+  it('defaults to terminal', () => {
+    expect(useSessionStore.getState().activeTab).toBe('terminal');
+  });
+
+  it('can switch tabs', () => {
+    useSessionStore.getState().setActiveTab('git');
+    expect(useSessionStore.getState().activeTab).toBe('git');
+  });
+
+  it('can switch to activity tab', () => {
+    useSessionStore.getState().setActiveTab('activity');
+    expect(useSessionStore.getState().activeTab).toBe('activity');
+  });
+
+  it('can switch to detail tab', () => {
+    useSessionStore.getState().setActiveTab('detail');
+    expect(useSessionStore.getState().activeTab).toBe('detail');
+  });
+});
