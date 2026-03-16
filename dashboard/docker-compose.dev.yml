@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: .
+    command: ["node", "--experimental-strip-types", "--experimental-transform-types", "--watch", "backend/src/index.ts"]
+    ports:
+      - "127.0.0.1:3141:3141"
+    volumes:
+      - "${HOME}/.claude:/root/.claude:ro"
+      - ./types:/app/types
+      - ./backend/src:/app/backend/src
+      - ./frontend/dist:/app/frontend/dist:ro
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3141
+      - HOME=/root
+    restart: unless-stopped
+
+  frontend:
+    build: .
+    command: ["sh", "-c", "cd frontend && pnpm build --watch"]
+    volumes:
+      - ./types:/app/types
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/dist:/app/frontend/dist
+      - ./frontend/index.html:/app/frontend/index.html
+      - ./frontend/public:/app/frontend/public
+      - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
+      - ./frontend/tailwind.config.js:/app/frontend/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/frontend/postcss.config.js
+    environment:
+      - HOME=/root

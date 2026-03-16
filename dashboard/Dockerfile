@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:24-slim
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
@@ -27,4 +27,4 @@ RUN cd frontend && pnpm build
 
 EXPOSE 3141
 
-CMD ["/app/backend/node_modules/.bin/tsx", "backend/src/index.ts"]
+CMD ["node", "--experimental-strip-types", "--experimental-transform-types", "backend/src/index.ts"]
