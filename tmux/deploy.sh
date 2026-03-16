@@ -238,6 +238,9 @@ echo -e "  If already in tmux, press ${GREEN}Ctrl-a + r${NC} to reload config"
 REMOTE_SCRIPT
 
 # 3. Optionally deploy Claude Code statusline
+# Note: statusline/install.sh now includes optional tmux environment setup.
+# If user installs statusline, they'll be prompted to set up tmux too.
+# The REMOTE_SCRIPT above handles tmux-only deployment (without statusline).
 STATUSLINE_DIR="$REPO_DIR/statusline"
 if [[ -d "$STATUSLINE_DIR" ]]; then
     echo ""
@@ -247,8 +250,10 @@ if [[ -d "$STATUSLINE_DIR" ]]; then
     if [[ "$_answer" =~ ^[Yy] ]]; then
         _has_statusline=1
         info "Deploying Claude Code statusline ..."
-        scp -r "${SSH_OPTS[@]}" "$STATUSLINE_DIR" "$REMOTE_HOST:/tmp/statusline-deploy"
-        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'bash /tmp/statusline-deploy/install.sh && rm -rf /tmp/statusline-deploy'
+        # Copy to permanent path so symlinks survive (not /tmp which gets deleted)
+        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "mkdir -p \$HOME/.local/share/claude-code-toolkit"
+        scp -r "${SSH_OPTS[@]}" "$STATUSLINE_DIR" "$REMOTE_HOST:~/.local/share/claude-code-toolkit/statusline"
+        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "bash ~/.local/share/claude-code-toolkit/statusline/install.sh"
         success "Claude Code statusline installed on $REMOTE_HOST"
     else
         info "Skipped statusline install. tmux.conf will gracefully handle missing scripts."
@@ -266,8 +271,9 @@ if [[ -d "$HOOKS_DIR" ]]; then
     read -r _answer
     if [[ "$_answer" =~ ^[Yy] ]]; then
         info "Deploying Claude Code hooks ..."
-        scp -r "${SSH_OPTS[@]}" "$HOOKS_DIR" "$REMOTE_HOST:/tmp/hooks-deploy"
-        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'bash /tmp/hooks-deploy/install.sh && rm -rf /tmp/hooks-deploy'
+        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "mkdir -p \$HOME/.local/share/claude-code-toolkit"
+        scp -r "${SSH_OPTS[@]}" "$HOOKS_DIR" "$REMOTE_HOST:~/.local/share/claude-code-toolkit/hooks"
+        ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "bash ~/.local/share/claude-code-toolkit/hooks/install.sh"
         success "Claude Code hooks installed on $REMOTE_HOST"
     else
         info "Skipped hooks install."
