@@ -69,17 +69,18 @@ mkdir -p "$CLAUDE_DIR" "$SESSIONS_DIR"
 
 # ── Step 4: Create symlinks ──────────────────────────────────────────────────
 # Use symbolic links so that `git pull` automatically updates installed scripts.
-# Skip files that already exist and are NOT our symlinks (user's own scripts).
+# If a regular file exists (from a previous copy-based install), back it up
+# and replace with a symlink.
 info "Creating symlinks in $CLAUDE_DIR..."
 
 for _script in statusline-command.sh dashboard.sh heartbeat.sh tmux-sessions.sh status-hook.sh; do
     _target="$CLAUDE_DIR/$_script"
     if [ -e "$_target" ] && [ ! -L "$_target" ]; then
-        warn "Skipped: $_target already exists (not a symlink). Backup and re-run to overwrite."
-    else
-        ln -sf "$SCRIPT_DIR/$_script" "$_target"
-        success "Linked: $_target -> $SCRIPT_DIR/$_script"
+        mv "$_target" "$_target.bak"
+        warn "Backed up existing file: $_target -> $_target.bak"
     fi
+    ln -sf "$SCRIPT_DIR/$_script" "$_target"
+    success "Linked: $_target -> $SCRIPT_DIR/$_script"
 done
 
 # Create alias symlink so both statusline.sh and statusline-command.sh work.
