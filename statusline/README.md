@@ -51,8 +51,7 @@ The script automatically:
 2. Installs `jq` (if not already installed)
 3. Creates symlinks in `~/.claude/` pointing to repo source (`statusline-command.sh`, `dashboard.sh`, `heartbeat.sh`, `tmux-sessions.sh`, `status-hook.sh`) — `git pull` auto-updates without re-install. Skips files that already exist as regular files to avoid overwriting user's own scripts
 4. Updates `~/.claude/settings.json` — configures statusLine, session lifecycle hooks (SessionStart/SessionEnd), and event-driven status hooks (UserPromptSubmit/PostToolUse/Stop). Auto-backs up existing settings
-5. If `tmux/tmux.conf` is found in the repo, offers to install the full tmux environment (tmux.conf + TPM + all plugins including Catppuccin theme)
-6. If full tmux setup is skipped but running inside a tmux session, configures a minimal Claude session monitor
+5. If running inside a tmux session, automatically configures a second status bar line with the real-time session monitor (updates every 2s)
 
 If `settings.json` already exists, the original is backed up to `~/.claude/settings.json.backup`.
 

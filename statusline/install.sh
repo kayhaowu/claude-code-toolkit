@@ -137,96 +137,39 @@ else
     success "Settings file created."
 fi
 
-# ── Step 6: Configure tmux ──────────────────────────────────────────────────
-# Detect if repo contains tmux/tmux.conf for full tmux environment setup
-REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-REPO_TMUX_CONF="$REPO_DIR/tmux/tmux.conf"
-
-if [ -f "$REPO_TMUX_CONF" ] && command -v tmux >/dev/null 2>&1; then
-    info "Found tmux.conf in repo: $REPO_TMUX_CONF"
-    printf '  Install full tmux environment (tmux.conf + TPM + plugins)? [Y/n] '
-    read -r _tmux_answer
-    case "$_tmux_answer" in
-        [Nn]*) info "Skipped tmux environment setup." ;;
-        *)
-            # 6a. Deploy tmux.conf
-            mkdir -p "$HOME/.config/tmux"
-            if [ -f "$HOME/.config/tmux/tmux.conf" ]; then
-                _backup="$HOME/.config/tmux/tmux.conf.bak.$(date +%Y%m%d_%H%M%S)"
-                cp "$HOME/.config/tmux/tmux.conf" "$_backup"
-                warn "Existing tmux.conf backed up to $_backup"
-            fi
-            cp "$REPO_TMUX_CONF" "$HOME/.config/tmux/tmux.conf"
-            success "tmux.conf deployed to ~/.config/tmux/tmux.conf"
-
-            # 6b. Symlink ~/.tmux -> ~/.config/tmux (for TPM compatibility)
-            if [ -L "$HOME/.tmux" ]; then
-                rm "$HOME/.tmux"
-            elif [ -d "$HOME/.tmux" ]; then
-                if [ -d "$HOME/.tmux/plugins/tpm" ]; then
-                    warn "Backing up existing ~/.tmux ..."
-                    mv "$HOME/.tmux" "$HOME/.tmux.bak.$(date +%Y%m%d_%H%M%S)"
-                else
-                    rm -rf "$HOME/.tmux"
-                fi
-            fi
-            ln -sf "$HOME/.config/tmux" "$HOME/.tmux"
-            success "symlink: ~/.tmux -> ~/.config/tmux"
-
-            # 6c. Install TPM
-            TPM_DIR="$HOME/.config/tmux/plugins/tpm"
-            if [ ! -d "$TPM_DIR" ]; then
-                info "Installing TPM (Tmux Plugin Manager) ..."
-                git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
-                success "TPM installed"
-            else
-                info "TPM already installed."
-            fi
-
-            # 6d. Install plugins
-            info "Installing tmux plugins ..."
-            "$TPM_DIR/bin/install_plugins"
-
-            # 6e. Fix catppuccin/dracula repo name collision
-            CATPPUCCIN_DIR="$HOME/.config/tmux/plugins/tmux"
-            if [ -f "$CATPPUCCIN_DIR/dracula.tmux" ]; then
-                warn "Detected Dracula instead of Catppuccin, fixing ..."
-                rm -rf "$CATPPUCCIN_DIR"
-                git clone https://github.com/catppuccin/tmux.git "$CATPPUCCIN_DIR"
-            fi
-            success "tmux plugins installed"
-
-            # 6f. Set up Claude monitor in live tmux session
-            if [ -n "${TMUX:-}" ]; then
-                tmux source-file "$HOME/.config/tmux/tmux.conf" 2>/dev/null || true
-                success "tmux config reloaded in current session."
-            else
-                info "Not inside tmux. Start tmux to see the new config."
-            fi
-            ;;
-    esac
-elif command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
-    # Fallback: no repo tmux.conf, but inside tmux — set minimal Claude monitor
+# ── Step 6: Configure tmux (optional) ────────────────────────────────────────
+if command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
+    # Check if tmux.conf already manages the Claude monitor.
+    # Note: on first install before tmux.conf is sourced, this returns 0
+    # and install.sh sets its own status-format[1]. When tmux.conf is later
+    # sourced, if-shell overwrites it — the final state is correct either way.
     _has_tmux_conf_monitor=$(tmux show -g status-format[1] 2>/dev/null | grep -c "tmux-sessions.sh" || echo "0")
+
     if [ "$_has_tmux_conf_monitor" -gt 0 ]; then
-        info "Claude monitor already configured in tmux.conf. Skipping."
+        info "Claude monitor already configured in tmux.conf. Skipping tmux setup."
     else
+        # Detect catppuccin theme
         _tmux_theme=$(tmux show -gv @catppuccin_flavor 2>/dev/null || echo "")
+
         if [ -n "$_tmux_theme" ]; then
             info "Catppuccin theme detected ($_tmux_theme). Using themed colors..."
             tmux set-option -g status 2
             tmux set-option -g status-format[1] "#[align=left,fg=#{@thm_mauve},bg=#{@thm_crust}] Claude: #(sh ~/.claude/tmux-sessions.sh)"
         else
-            info "Setting up Claude monitor on tmux status bar..."
+            info "tmux detected. Setting up real-time session monitor on status bar line 2..."
             tmux set-option -g status 2
             tmux set-option -g status-format[1] "#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)"
         fi
         tmux set-option -g status-interval 2
-        success "tmux session monitor enabled."
+        success "tmux session monitor enabled (updates every 2s)."
+        info "To disable: tmux set-option -g status 1"
     fi
 else
     info "tmux not detected or not inside a tmux session."
-    info "To enable tmux monitor, start tmux and re-run this script."
+    info "To enable real-time session monitor, run inside tmux:"
+    info "  tmux set-option -g status 2"
+    info "  tmux set-option -g status-format[1] \"#[align=left,fg=#bd93f9,bg=#282a36] Claude: #(sh ~/.claude/tmux-sessions.sh)\""
+    info "  tmux set-option -g status-interval 2"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────

@@ -51,8 +51,7 @@ bash statusline/install.sh
 2. 安裝 `jq`（若尚未安裝）
 3. 在 `~/.claude/` 建立指向 repo 原始碼的符號連結（`statusline-command.sh`、`dashboard.sh`、`heartbeat.sh`、`tmux-sessions.sh`、`status-hook.sh`）— `git pull` 即可自動更新，無需重新安裝。若檔案已存在且非符號連結（使用者自己的腳本），會跳過保護
 4. 更新 `~/.claude/settings.json` — 設定 statusLine、session 生命週期 hooks（SessionStart/SessionEnd）、事件驅動狀態 hooks（UserPromptSubmit/PostToolUse/Stop）。自動備份既有設定
-5. 若偵測到 repo 中有 `tmux/tmux.conf`，詢問是否安裝完整 tmux 環境（tmux.conf + TPM + 所有插件，包含 Catppuccin 主題）
-6. 若不安裝完整環境但在 tmux session 中，設定最小化的 Claude session monitor
+5. 若在 tmux session 中執行，自動設定第二行狀態列顯示即時 session 監控（每 2 秒更新）
 
 若 `settings.json` 已存在，原始檔案會備份為 `~/.claude/settings.json.backup`。
 
