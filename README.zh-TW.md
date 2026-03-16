@@ -2,6 +2,10 @@
 
 # Claude Code Toolkit
 
+<p align="center">
+  <img src="assets/social-preview.png" alt="Claude Code Toolkit" width="640" />
+</p>
+
 > 提升 Claude Code CLI 使用體驗的工具與設定集合。
 
 ## 功能

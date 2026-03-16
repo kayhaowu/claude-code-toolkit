@@ -1,5 +1,9 @@
 # Claude Code Toolkit
 
+<p align="center">
+  <img src="assets/social-preview.png" alt="Claude Code Toolkit" width="640" />
+</p>
+
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
 > A collection of tools and utilities for enhancing the Claude Code CLI experience.
