@@ -6,18 +6,21 @@ interface SessionStoreState {
   sessions: Map<string, Session>;
   selectedId: string | null;
   filter: { status: string | null; search: string };
+  activeTab: 'terminal' | 'activity' | 'git' | 'detail';
 
   setSnapshot: (sessions: Session[]) => void;
   updateSession: (session: Session) => void;
   removeSession: (id: string) => void;
   setSelected: (id: string | null) => void;
   setFilter: (filter: Partial<SessionStoreState['filter']>) => void;
+  setActiveTab: (tab: SessionStoreState['activeTab']) => void;
 }
 
 export const useSessionStore = create<SessionStoreState>((set) => ({
   sessions: new Map(),
   selectedId: null,
   filter: { status: null, search: '' },
+  activeTab: 'terminal',
 
   setSnapshot: (sessions) => set({
     sessions: new Map(sessions.map(s => [s.id, s])),
@@ -36,6 +39,7 @@ export const useSessionStore = create<SessionStoreState>((set) => ({
   setFilter: (filter) => set((state) => ({
     filter: { ...state.filter, ...filter },
   })),
+  setActiveTab: (tab) => set({ activeTab: tab }),
 }));
 
 // Derived selectors — memoized to prevent unnecessary re-renders
