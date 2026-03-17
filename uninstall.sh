@@ -1,6 +1,6 @@
 #!/bin/sh
 # Uninstaller for claude-code-toolkit
-# Usage: bash ~/.claude-code-toolkit/uninstall.sh
+# Usage: bash ~/.claude-code-toolkit/uninstall.sh [--yes]
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -19,15 +19,28 @@ info "Removing installed modules..."
 
 if [ -f "$SCRIPT_DIR/statusline/uninstall.sh" ]; then
     info "Running statusline uninstaller..."
-    sh "$SCRIPT_DIR/statusline/uninstall.sh" || warn "Statusline uninstall had warnings (continuing)"
+    if ! sh "$SCRIPT_DIR/statusline/uninstall.sh"; then
+        warn "Statusline uninstaller exited with errors. Check ~/.claude/settings.json manually."
+    fi
 fi
 
 if [ -f "$SCRIPT_DIR/hooks/uninstall.sh" ]; then
     info "Running hooks uninstaller..."
-    sh "$SCRIPT_DIR/hooks/uninstall.sh" || warn "Hooks uninstall had warnings (continuing)"
+    if ! sh "$SCRIPT_DIR/hooks/uninstall.sh"; then
+        warn "Hooks uninstaller exited with errors. Check ~/.claude/settings.json manually."
+    fi
 fi
 
 # ── Step 2: Remove toolkit directory ──────────────────────────────────────────
+# Safety: verify SCRIPT_DIR looks like our install path
+case "$SCRIPT_DIR" in
+    *claude-code-toolkit*) ;;
+    *)
+        warn "SCRIPT_DIR ($SCRIPT_DIR) does not look like a toolkit directory. Skipping removal."
+        exit 0
+        ;;
+esac
+
 if [ -t 0 ]; then
     printf '\n'
     printf "Remove $SCRIPT_DIR? [Y/n] "
@@ -35,10 +48,13 @@ if [ -t 0 ]; then
     case "$_answer" in
         [Nn]*) info "Kept $SCRIPT_DIR. You can remove it manually later."; exit 0 ;;
     esac
+elif [ "$1" != "--yes" ]; then
+    warn "Non-interactive mode: pass --yes to confirm removal of $SCRIPT_DIR"
+    info "Modules were uninstalled. Directory kept."
+    exit 0
 fi
 
 rm -rf "$SCRIPT_DIR"
-success "Removed $SCRIPT_DIR"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""

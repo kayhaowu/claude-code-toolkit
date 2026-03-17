@@ -41,8 +41,11 @@ if [ "$1" = "--relink" ]; then
     done
     if [ "$_fixed" -gt 0 ]; then
         success "Fixed $_fixed broken symlink(s). $_ok already OK."
-    else
+    elif [ "$_ok" -gt 0 ]; then
         info "All $_ok symlink(s) already point to correct location."
+    else
+        warn "No symlinks found. Run a full install first: bash $SCRIPT_DIR/install.sh"
+        exit 1
     fi
     exit 0
 fi

@@ -18,10 +18,15 @@ error()   { printf "${RED}[ERROR]${NC} %s\n" "$1" >&2; exit 1; }
 success() { printf "${GREEN}[DONE]${NC}  %s\n" "$1"; }
 
 # ── Error trap ────────────────────────────────────────────────────────────────
+_fresh_install=false
 cleanup() {
     if [ $? -ne 0 ]; then
         echo ""
         warn "Installation failed. Check the error above and try again."
+        if [ "$_fresh_install" = true ] && [ -d "$INSTALL_DIR" ]; then
+            warn "Cleaning up partial installation..."
+            rm -rf "$INSTALL_DIR"
+        fi
     fi
 }
 trap cleanup EXIT
@@ -52,12 +57,15 @@ Remove it manually and re-run:  rm -rf $INSTALL_DIR"
 
     info "Existing installation found. Updating..."
     if ! git -C "$INSTALL_DIR" pull origin main 2>&1; then
-        error "git pull failed. You may have local changes.
-Fix manually:  cd $INSTALL_DIR && git stash && git pull origin main"
+        error "git pull failed. See the error above for details.
+Common fixes:
+  Local changes:  cd $INSTALL_DIR && git stash && git pull origin main
+  Network issue:  check your connection and retry"
     fi
     success "Updated to latest version."
 else
     info "Installing claude-code-toolkit..."
+    _fresh_install=true
     git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
     success "Cloned to $INSTALL_DIR"
 fi
