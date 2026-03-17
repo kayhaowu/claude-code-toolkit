@@ -37,9 +37,20 @@
 
 ## 快速開始
 
-### 在本機安裝
+### 一行安裝
 
-Clone 此 repo，然後執行：
+```bash
+curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/main/install.sh | bash
+```
+
+然後啟用需要的模組：
+
+```bash
+bash ~/.claude-code-toolkit/statusline/install.sh   # 狀態列 + tmux
+bash ~/.claude-code-toolkit/hooks/install.sh         # 安全 hooks
+```
+
+### 從本機 clone 安裝
 
 ```bash
 git clone https://github.com/kayhaowu/claude-code-toolkit.git
@@ -48,6 +59,12 @@ bash statusline/install.sh
 ```
 
 安裝完成後，重新啟動 Claude Code 即可啟用。若在 tmux 中執行，session 監控會自動出現。
+
+### 移除
+
+```bash
+bash ~/.claude-code-toolkit/uninstall.sh
+```
 
 ### 部署到遠端 Linux 主機
 

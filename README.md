@@ -37,9 +37,20 @@ After installation in tmux, you get both the Claude Code status line and a tmux 
 
 ## Quick Start
 
-### Install on the current machine
+### One-line install
 
-Clone this repo, then run:
+```bash
+curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/main/install.sh | bash
+```
+
+Then enable the modules you want:
+
+```bash
+bash ~/.claude-code-toolkit/statusline/install.sh   # Status line + tmux
+bash ~/.claude-code-toolkit/hooks/install.sh         # Safety hooks
+```
+
+### Install from a local clone
 
 ```bash
 git clone https://github.com/kayhaowu/claude-code-toolkit.git
@@ -48,6 +59,12 @@ bash statusline/install.sh
 ```
 
 Restart Claude Code after installation. If you're inside tmux, the session monitor appears automatically.
+
+### Uninstall
+
+```bash
+bash ~/.claude-code-toolkit/uninstall.sh
+```
 
 ### Deploy to a remote Linux host
 
