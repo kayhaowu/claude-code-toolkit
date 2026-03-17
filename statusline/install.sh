@@ -25,6 +25,43 @@ warn()    { printf "${YELLOW}[WARN]${NC}  %s\n" "$1" >&2; }
 error()   { printf "${RED}[ERROR]${NC} %s\n" "$1" >&2; exit 1; }
 success() { printf "${GREEN}[DONE]${NC}  %s\n" "$1"; }
 
+# ── Quick relink mode ─────────────────────────────────────────────────────────
+# Usage: bash statusline/install.sh --relink
+# Repairs broken symlinks after moving the toolkit folder.
+if [ "$1" = "--relink" ]; then
+    info "Relinking statusline scripts to $SCRIPT_DIR..."
+    _fixed=0
+    _ok=0
+    for script in statusline-command.sh dashboard.sh heartbeat.sh \
+                  tmux-sessions.sh status-hook.sh configure.sh; do
+        _target="$CLAUDE_DIR/$script"
+        if [ -L "$_target" ]; then
+            if [ -e "$_target" ]; then
+                _ok=$((_ok + 1))
+            else
+                ln -sf "$SCRIPT_DIR/$script" "$_target"
+                _fixed=$((_fixed + 1))
+            fi
+        fi
+    done
+    # Also fix the statusline.sh alias
+    _alias="$CLAUDE_DIR/statusline.sh"
+    if [ -L "$_alias" ]; then
+        if [ -e "$_alias" ]; then
+            _ok=$((_ok + 1))
+        else
+            ln -sf "$SCRIPT_DIR/statusline-command.sh" "$_alias"
+            _fixed=$((_fixed + 1))
+        fi
+    fi
+    if [ "$_fixed" -gt 0 ]; then
+        success "Fixed $_fixed broken symlink(s). $_ok already OK."
+    else
+        info "All $_ok symlink(s) already point to correct location."
+    fi
+    exit 0
+fi
+
 # ── Step 1: Detect OS ─────────────────────────────────────────────────────────
 info "Detecting operating system..."
 OS=""
