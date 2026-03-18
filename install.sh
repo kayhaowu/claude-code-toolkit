@@ -47,6 +47,27 @@ if ! command -v jq >/dev/null 2>&1; then
   RHEL:   sudo yum install jq"
 fi
 
+# ── Step 1b: Check and install tmux ───────────────────────────────────────────
+if ! command -v tmux >/dev/null 2>&1; then
+    info "tmux not found. Installing..."
+    if [ "$(uname)" = "Darwin" ]; then
+        if command -v brew >/dev/null 2>&1; then
+            brew install tmux
+        else
+            error "tmux is required. Install Homebrew first (https://brew.sh), then: brew install tmux"
+        fi
+    elif [ -f /etc/debian_version ]; then
+        sudo apt-get update -qq && sudo apt-get install -y tmux
+    elif [ -f /etc/redhat-release ] || [ -f /etc/centos-release ]; then
+        sudo yum install -y tmux
+    else
+        error "tmux is required but could not be installed automatically. Install it manually and re-run."
+    fi
+    success "tmux installed: $(tmux -V)"
+else
+    info "tmux already installed: $(tmux -V)"
+fi
+
 # ── Step 2: Clone or update ───────────────────────────────────────────────────
 if [ -d "$INSTALL_DIR" ]; then
     # Exists — check if valid git repo
