@@ -99,7 +99,62 @@ else
     success "Cloned to $INSTALL_DIR"
 fi
 
-# ── Step 3: Print next steps ──────────────────────────────────────────────────
+# ── Step 3: Setup tmux environment (TPM + plugins + tmux.conf) ────────────────
+TMUX_CONF="$INSTALL_DIR/tmux/tmux.conf"
+TMUX_CONF_DIR="$HOME/.config/tmux"
+TPM_DIR="$TMUX_CONF_DIR/plugins/tpm"
+
+if [ -f "$TMUX_CONF" ]; then
+    # Deploy tmux.conf
+    mkdir -p "$TMUX_CONF_DIR"
+    if [ -f "$TMUX_CONF_DIR/tmux.conf" ]; then
+        if diff -q "$TMUX_CONF_DIR/tmux.conf" "$TMUX_CONF" >/dev/null 2>&1; then
+            info "tmux.conf is already up-to-date."
+        else
+            _backup="$TMUX_CONF_DIR/tmux.conf.bak.$(date +%Y%m%d_%H%M%S)"
+            cp "$TMUX_CONF_DIR/tmux.conf" "$_backup"
+            warn "Existing tmux.conf backed up to $_backup"
+            cp "$TMUX_CONF" "$TMUX_CONF_DIR/tmux.conf"
+            success "tmux.conf updated."
+        fi
+    else
+        cp "$TMUX_CONF" "$TMUX_CONF_DIR/tmux.conf"
+        success "tmux.conf deployed to $TMUX_CONF_DIR/tmux.conf"
+    fi
+
+    # Symlink ~/.tmux -> ~/.config/tmux (for TPM compatibility)
+    if [ -L "$HOME/.tmux" ]; then
+        rm "$HOME/.tmux"
+    elif [ -d "$HOME/.tmux" ] && [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
+        rm -rf "$HOME/.tmux"
+    fi
+    ln -sf "$TMUX_CONF_DIR" "$HOME/.tmux"
+
+    # Install TPM
+    if [ ! -d "$TPM_DIR" ]; then
+        info "Installing TPM (Tmux Plugin Manager)..."
+        git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM_DIR"
+        success "TPM installed."
+    else
+        info "TPM already installed."
+    fi
+
+    # Install plugins
+    if [ -x "$TPM_DIR/bin/install_plugins" ]; then
+        info "Installing tmux plugins..."
+        "$TPM_DIR/bin/install_plugins" || warn "Plugin install had issues (continuing)"
+        # Fix catppuccin/dracula repo name collision
+        CATPPUCCIN_DIR="$TMUX_CONF_DIR/plugins/tmux"
+        if [ -f "$CATPPUCCIN_DIR/dracula.tmux" ]; then
+            warn "Detected Dracula instead of Catppuccin, fixing..."
+            rm -rf "$CATPPUCCIN_DIR"
+            git clone --depth 1 https://github.com/catppuccin/tmux.git "$CATPPUCCIN_DIR"
+        fi
+        success "tmux plugins installed."
+    fi
+fi
+
+# ── Step 4: Print next steps ──────────────────────────────────────────────────
 echo ""
 success "claude-code-toolkit is ready!"
 echo ""
