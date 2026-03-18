@@ -34,7 +34,7 @@ fi
 # ── Step 2: Remove toolkit directory ──────────────────────────────────────────
 # Safety: verify SCRIPT_DIR looks like our install path
 case "$SCRIPT_DIR" in
-    *claude-code-toolkit*) ;;
+    */claude-code-toolkit|*/.claude-code-toolkit) ;;
     *)
         warn "SCRIPT_DIR ($SCRIPT_DIR) does not look like a toolkit directory. Skipping removal."
         exit 0

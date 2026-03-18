@@ -85,7 +85,7 @@ Remove it manually and re-run:  rm -rf $INSTALL_DIR"
     fi
 
     info "Existing installation found. Updating..."
-    if ! git -C "$INSTALL_DIR" pull origin main 2>&1; then
+    if ! git -C "$INSTALL_DIR" pull origin main; then
         error "git pull failed. See the error above for details.
 Common fixes:
   Local changes:  cd $INSTALL_DIR && git stash && git pull origin main
@@ -95,7 +95,7 @@ Common fixes:
 else
     info "Installing claude-code-toolkit..."
     _fresh_install=true
-    git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
+    git clone --depth 1 --single-branch "$REPO_URL" "$INSTALL_DIR"
     success "Cloned to $INSTALL_DIR"
 fi
 
