@@ -276,6 +276,67 @@ if [ -n "$cc_version" ] && [ "$cc_version" != "null" ]; then
     version_str="v${cc_version}"
 fi
 
+# ── Rate limit helpers ──────────────────────────────────────────────────────
+# Build a 5-dot bar: filled=● empty=○ (none theme: */.)
+build_dots() {
+    _bd_pct="$1"
+    _bd_filled=$(( _bd_pct / 20 ))
+    [ "$_bd_filled" -gt 5 ] && _bd_filled=5
+    _bd_empty=$(( 5 - _bd_filled ))
+    _bd_out=""
+    _bd_i=0
+    while [ "$_bd_i" -lt "$_bd_filled" ]; do
+        if [ "$_theme" = "none" ]; then _bd_out="${_bd_out}*"; else _bd_out="${_bd_out}●"; fi
+        _bd_i=$(( _bd_i + 1 ))
+    done
+    _bd_i=0
+    while [ "$_bd_i" -lt "$_bd_empty" ]; do
+        if [ "$_theme" = "none" ]; then _bd_out="${_bd_out}."; else _bd_out="${_bd_out}○"; fi
+        _bd_i=$(( _bd_i + 1 ))
+    done
+    printf '%s' "$_bd_out"
+}
+
+# Format remaining minutes to human-readable: XdXh, XhYm, or Xm
+fmt_remaining() {
+    _fr_min="$1"
+    [ "$_fr_min" -le 0 ] 2>/dev/null && return 1
+    _fr_d=$(( _fr_min / 1440 ))
+    _fr_h=$(( (_fr_min % 1440) / 60 ))
+    _fr_m=$(( _fr_min % 60 ))
+    if [ "$_fr_d" -gt 0 ]; then
+        printf '%dd%dh' "$_fr_d" "$_fr_h"
+    elif [ "$_fr_h" -gt 0 ]; then
+        printf '%dh%dm' "$_fr_h" "$_fr_m"
+    else
+        printf '%dm' "$_fr_m"
+    fi
+}
+
+# Render a single rate sub-widget: label + dots + pct + time
+# Returns 1 if data is absent (-1).
+_render_rate() {
+    _rr_label="$1"; _rr_pct_raw="$2"; _rr_remain="$3"
+    [ "$_rr_pct_raw" = "-1" ] && return 1
+    _rr_pct=$(printf "%.0f" "$_rr_pct_raw")
+    [ "$_rr_pct" -gt 100 ] && _rr_pct=100
+    if [ "$_rr_pct" -ge 100 ]; then
+        _rr_c="$C_ALERT"; _rr_suffix="!"
+    elif [ "$_rr_pct" -gt 80 ]; then
+        _rr_c="$C_CTX_BAD"; _rr_suffix=""
+    elif [ "$_rr_pct" -gt 60 ]; then
+        _rr_c="$C_CTX_WARN"; _rr_suffix=""
+    else
+        _rr_c="$C_CTX_OK"; _rr_suffix=""
+    fi
+    _rr_dots=$(build_dots "$_rr_pct")
+    _rr_time=""
+    if _rr_time_str=$(fmt_remaining "$_rr_remain"); then
+        _rr_time=" $_rr_time_str"
+    fi
+    printf '%b' "${_rr_c}${_rr_label} ${_rr_dots} ${_rr_pct}%${_rr_suffix}${_rr_time}${C_RESET}"
+}
+
 # ── Render widget ────────────────────────────────────────────────────────────
 render_widget() {
     case "$1" in
