@@ -175,7 +175,7 @@ draw_ui() {
 # ── Preview using actual statusline-command.sh ───────────────────────────────
 show_preview() {
     local prefix="${1:-}"
-    local mock_json='{"model":{"display_name":"Opus 4.6"},"context_window":{"used_percentage":42,"total_input_tokens":2000,"total_output_tokens":83200,"context_window_size":200000},"cost":{"total_cost_usd":3.52,"total_duration_ms":7263000,"total_lines_added":538,"total_lines_removed":47},"exceeds_200k_tokens":false,"workspace":{"project_dir":"/home/user/my-project"},"version":"2.1.76","vim":{"mode":"NORMAL"},"rate_limits":{"five_hour":{"used_percentage":42.3,"resets_at":"2026-03-20T18:00:00Z"},"seven_day":{"used_percentage":85.7,"resets_at":"2026-03-24T00:00:00Z"}}}'
+    local mock_json='{"model":{"display_name":"Opus 4.6"},"context_window":{"used_percentage":42,"total_input_tokens":2000,"total_output_tokens":83200,"context_window_size":200000},"cost":{"total_cost_usd":3.52,"total_duration_ms":7263000,"total_lines_added":538,"total_lines_removed":47},"exceeds_200k_tokens":false,"workspace":{"project_dir":"/home/user/my-project"},"version":"2.1.76","vim":{"mode":"NORMAL"},"rate_limits":{"five_hour":{"used_percentage":42.3,"resets_at":"2099-01-01T00:00:00Z"},"seven_day":{"used_percentage":85.7,"resets_at":"2099-01-01T00:00:00Z"}}}'
 
     # Write temp config
     local tmp_conf

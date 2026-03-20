@@ -144,10 +144,10 @@ _parsed=$(printf '%s' "$input" | jq --argjson epoch "$_now" -r '[
     (.cost.total_lines_removed // 0 | tostring),
     (.version // ""),
     (.vim.mode // ""),
-    (.rate_limits.five_hour.used_percentage // -1 | tostring),
-    ((.rate_limits.five_hour.resets_at // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) else (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor end) | tostring),
-    (.rate_limits.seven_day.used_percentage // -1 | tostring),
-    ((.rate_limits.seven_day.resets_at // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) else (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor end) | tostring)
+    (.rate_limits.five_hour.used_percentage // -1 | if type == "number" then . else -1 end | tostring),
+    ((.rate_limits.five_hour.resets_at // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) elif type == "string" then (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor else -1 end) | tostring),
+    (.rate_limits.seven_day.used_percentage // -1 | if type == "number" then . else -1 end | tostring),
+    ((.rate_limits.seven_day.resets_at // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) elif type == "string" then (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor else -1 end) | tostring)
 ] | join("\u001f")')
 
 IFS=$(printf '\x1f') read -r model used_pct total_input total_output cost_usd exceeds_200k project_dir duration_ms lines_added lines_removed cc_version vim_mode rate5h_pct rate5h_remaining_min rate7d_pct rate7d_remaining_min <<EOF
@@ -397,9 +397,9 @@ render_line() {
             git)      [ -z "$git_branch" ] && continue ;;
             version)  [ -z "$version_str" ] && continue ;;
             vim)      [ -z "$vim_mode" ] && continue ;;
-            rate5h)   [ "$rate5h_pct" = "-1" ] && continue ;;
-            rate7d)   [ "$rate7d_pct" = "-1" ] && continue ;;
-            rate)     [ "$rate5h_pct" = "-1" ] && [ "$rate7d_pct" = "-1" ] && continue ;;
+            rate5h)   { [ "$rate5h_pct" = "-1" ] || [ -z "$rate5h_pct" ]; } && continue ;;
+            rate7d)   { [ "$rate7d_pct" = "-1" ] || [ -z "$rate7d_pct" ]; } && continue ;;
+            rate)     { [ "$rate5h_pct" = "-1" ] || [ -z "$rate5h_pct" ]; } && { [ "$rate7d_pct" = "-1" ] || [ -z "$rate7d_pct" ]; } && continue ;;
         esac
         [ "$_render_sep" -eq 1 ] && printf '%b' "$SEP"
         render_widget "$_w"
