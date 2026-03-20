@@ -145,9 +145,9 @@ _parsed=$(printf '%s' "$input" | jq --argjson epoch "$_now" -r '[
     (.version // ""),
     (.vim.mode // ""),
     (.rate_limits.five_hour.used_percentage // -1 | tostring),
-    ((.rate_limits.five_hour.resets_at // "" | if . == "" then -1 else (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor end) | tostring),
+    ((.rate_limits.five_hour.resets_at // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) else (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor end) | tostring),
     (.rate_limits.seven_day.used_percentage // -1 | tostring),
-    ((.rate_limits.seven_day.resets_at // "" | if . == "" then -1 else (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor end) | tostring)
+    ((.rate_limits.seven_day.resets_at // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) else (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor end) | tostring)
 ] | join("\u001f")')
 
 IFS=$(printf '\x1f') read -r model used_pct total_input total_output cost_usd exceeds_200k project_dir duration_ms lines_added lines_removed cc_version vim_mode rate5h_pct rate5h_remaining_min rate7d_pct rate7d_remaining_min <<EOF
