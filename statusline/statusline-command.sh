@@ -360,6 +360,25 @@ render_widget() {
                 *)       return 1 ;;
             esac
             ;;
+        rate5h)
+            _render_rate "5h" "$rate5h_pct" "$rate5h_remaining_min" || return 1
+            ;;
+        rate7d)
+            _render_rate "7d" "$rate7d_pct" "$rate7d_remaining_min" || return 1
+            ;;
+        rate)
+            _rate_has_output=0
+            if [ "$rate5h_pct" != "-1" ]; then
+                _render_rate "5h" "$rate5h_pct" "$rate5h_remaining_min"
+                _rate_has_output=1
+            fi
+            if [ "$rate7d_pct" != "-1" ]; then
+                [ "$_rate_has_output" -eq 1 ] && printf '  '
+                _render_rate "7d" "$rate7d_pct" "$rate7d_remaining_min"
+                _rate_has_output=1
+            fi
+            [ "$_rate_has_output" -eq 0 ] && return 1
+            ;;
         *) return 1 ;;
     esac
 }
@@ -377,6 +396,9 @@ render_line() {
             git)      [ -z "$git_branch" ] && continue ;;
             version)  [ -z "$version_str" ] && continue ;;
             vim)      [ -z "$vim_mode" ] && continue ;;
+            rate5h)   [ "$rate5h_pct" = "-1" ] && continue ;;
+            rate7d)   [ "$rate7d_pct" = "-1" ] && continue ;;
+            rate)     [ "$rate5h_pct" = "-1" ] && [ "$rate7d_pct" = "-1" ] && continue ;;
         esac
         [ "$_render_sep" -eq 1 ] && printf '%b' "$SEP"
         render_widget "$_w"
