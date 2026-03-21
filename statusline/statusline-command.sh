@@ -132,8 +132,8 @@ fi
 _now=$(date +%s)
 
 _parsed=$(printf '%s' "$input" | jq --argjson epoch "$_now" -r '
-def resets_min: . // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) elif type == "string" then (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch $epoch) - $epoch | . / 60 | floor else -1 end;
-def pct_or_neg1: . // -1 | if type == "number" then . else -1 end;
+def resets_min: . // "" | if . == "" then -1 elif type == "number" then ((. - $epoch) / 60 | floor) elif type == "string" then (gsub("\\+00:00$";"Z") | gsub("\\.[0-9]+Z$";"Z") | try fromdate catch -1) | if . == -1 then -1 else (. - $epoch) / 60 | floor end else -1 end;
+def pct_or_neg1: . // -1 | if type == "number" then . elif type == "string" then (tonumber? // -1) else -1 end;
 [
     (.model.display_name // "Unknown Model"),
     (.context_window.used_percentage // ""),
@@ -151,7 +151,12 @@ def pct_or_neg1: . // -1 | if type == "number" then . else -1 end;
     (.rate_limits.five_hour.resets_at | resets_min | tostring),
     (.rate_limits.seven_day.used_percentage | pct_or_neg1 | tostring),
     (.rate_limits.seven_day.resets_at | resets_min | tostring)
-] | join("\u001f")')
+] | join("\u001f")') || _parsed=""
+
+if [ -z "$_parsed" ]; then
+    printf 'statusline: parse error\n' >&2
+    exit 1
+fi
 
 _US=$(printf '\x1f')
 IFS="$_US" read -r model used_pct total_input total_output cost_usd exceeds_200k project_dir duration_ms lines_added lines_removed cc_version vim_mode rate5h_pct rate5h_remaining_min rate7d_pct rate7d_remaining_min <<EOF
@@ -305,7 +310,8 @@ build_dots() {
 # Format remaining minutes to human-readable: XdXh, XhYm, or Xm
 fmt_remaining() {
     _fr_min="$1"
-    [ "$_fr_min" -le 0 ] 2>/dev/null && return 1
+    case "$_fr_min" in ''|*[!0-9-]*) return 1 ;; esac
+    [ "$_fr_min" -le 0 ] && return 1
     _fr_d=$(( _fr_min / 1440 ))
     _fr_h=$(( (_fr_min % 1440) / 60 ))
     _fr_m=$(( _fr_min % 60 ))
@@ -322,8 +328,8 @@ fmt_remaining() {
 # Returns 1 if data is absent (-1).
 _render_rate() {
     _rr_label="$1"; _rr_pct_raw="$2"; _rr_remain="$3"
-    [ "$_rr_pct_raw" = "-1" ] && return 1
-    _rr_pct=$(printf "%.0f" "$_rr_pct_raw")
+    case "$_rr_pct_raw" in ''|-1) return 1 ;; esac
+    _rr_pct=$(LC_ALL=C printf "%.0f" "$_rr_pct_raw")
     [ "$_rr_pct" -gt 100 ] && _rr_pct=100
     if [ "$_rr_pct" -ge 100 ]; then
         _rr_c="$C_ALERT"; _rr_suffix="!"
@@ -373,14 +379,16 @@ render_widget() {
             ;;
         rate)
             _rate_has_output=0
-            if [ "$rate5h_pct" != "-1" ]; then
-                _render_rate "5h" "$rate5h_pct" "$rate5h_remaining_min"
-                _rate_has_output=1
+            if [ "$rate5h_pct" != "-1" ] && [ -n "$rate5h_pct" ]; then
+                if _render_rate "5h" "$rate5h_pct" "$rate5h_remaining_min"; then
+                    _rate_has_output=1
+                fi
             fi
-            if [ "$rate7d_pct" != "-1" ]; then
+            if [ "$rate7d_pct" != "-1" ] && [ -n "$rate7d_pct" ]; then
                 [ "$_rate_has_output" -eq 1 ] && printf '  '
-                _render_rate "7d" "$rate7d_pct" "$rate7d_remaining_min"
-                _rate_has_output=1
+                if _render_rate "7d" "$rate7d_pct" "$rate7d_remaining_min"; then
+                    _rate_has_output=1
+                fi
             fi
             [ "$_rate_has_output" -eq 0 ] && return 1
             ;;

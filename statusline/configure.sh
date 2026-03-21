@@ -184,17 +184,21 @@ show_preview() {
         echo "${ACTIVE[$i]} ${ACTIVE_LINE[$i]}" >> "$tmp_conf"
     done
 
-    local output
-    output=$(echo "$mock_json" | CLAUDE_STATUSLINE_WIDGETS_CONF="$tmp_conf" CLAUDE_STATUSLINE_SHOW_COST=1 sh "$SCRIPT_DIR/statusline-command.sh" 2>/dev/null) || true
+    local output _preview_err
+    _preview_err=$(mktemp)
+    output=$(echo "$mock_json" | CLAUDE_STATUSLINE_WIDGETS_CONF="$tmp_conf" CLAUDE_STATUSLINE_SHOW_COST=1 sh "$SCRIPT_DIR/statusline-command.sh" 2>"$_preview_err") || true
     rm -f "$tmp_conf"
 
     if [[ -n "$output" ]]; then
         while IFS= read -r line; do
             printf '%s%b\n' "$prefix" "$line"
         done <<< "$output"
+    elif [[ -s "$_preview_err" ]]; then
+        printf '%s%b%s%b\n' "$prefix" "${RED}" "Preview error: $(cat "$_preview_err")" "${NC}"
     else
         printf '%s%s\n' "$prefix" "${DIM}(no output — add some widgets)${NC}"
     fi
+    rm -f "$_preview_err"
 }
 
 # ── Save config ──────────────────────────────────────────────────────────────
