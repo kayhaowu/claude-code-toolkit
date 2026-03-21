@@ -14,6 +14,8 @@ Ready-to-use hook scripts for automating Claude Code workflows. Hooks integrate 
 | `notify-on-stop.sh` | Stop | Desktop/tmux notification when Claude finishes (30s threshold) |
 | `context-alert.sh` | Stop | Warn when context usage exceeds 80% or 95% |
 | `usage-logger.sh` | Session | Log session usage to `~/.claude/hooks/usage.jsonl` |
+| `tg-notify-pretool.sh` | PreToolUse | Telegram alert on Bash execution (⚠️ for high-risk commands) |
+| `tg-notify-stop.sh` | Stop | Telegram message with completion summary |
 
 ## Install / Uninstall
 
@@ -41,6 +43,7 @@ Hooks are split into two tiers:
 - `auto-format.sh` — requires formatters to be installed
 - `context-alert.sh` — useful when nearing context limits
 - `usage-logger.sh` — creates a persistent log file
+- `tg-notify-pretool.sh` + `tg-notify-stop.sh` — requires Telegram bot credentials
 
 ## Hook Details
 
@@ -143,12 +146,37 @@ Fields:
 
 Requires the statusline component for session state files.
 
+### tg-notify-pretool.sh
+
+Fires on `PreToolUse` for `Bash` tool calls. Sends a Telegram message for every command Claude runs — ⚠️ for high-risk patterns (ssh, docker, rm, reboot, etc.) and ⚙️ for normal commands. The first 200 characters of the command are included.
+
+Requires `TG_TOKEN` and `TG_CHAT_ID` in `~/.claude/.env`. See [Telegram Bot Setup](#telegram-bot-setup) below.
+
+### tg-notify-stop.sh
+
+Fires on `Stop` events. Sends a ✅ Telegram message with the first 300 characters of Claude's last response as a summary. Silent if there is no assistant message.
+
+Requires `TG_TOKEN` and `TG_CHAT_ID` in `~/.claude/.env`.
+
+## Telegram Bot Setup
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) and save the token
+2. Send any message to your bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to find your Chat ID
+3. Add to `~/.claude/.env`:
+
+```bash
+TG_TOKEN="your-bot-token"
+TG_CHAT_ID="your-chat-id"
+```
+
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `CLAUDE_HOOKS_ALLOW_DANGEROUS` | Set to `1` to bypass safety-guard blocks |
 | `CLAUDE_HOOKS_ALLOW_SENSITIVE` | Set to `1` to bypass sensitive-files blocks |
+| `TG_TOKEN` | Telegram bot token (tg-notify hooks) |
+| `TG_CHAT_ID` | Telegram chat ID (tg-notify hooks) |
 
 ## Prerequisites
 
@@ -171,5 +199,8 @@ Requires the statusline component for session state files.
 | `notify-on-stop.sh` | Completion notifier (Stop) |
 | `context-alert.sh` | Context usage alerter (Stop) |
 | `usage-logger.sh` | Session usage logger (Session) |
+| `telegram.sh` | Telegram helper — sourced by tg-notify hooks |
+| `tg-notify-pretool.sh` | Telegram alert on Bash execution (PreToolUse) |
+| `tg-notify-stop.sh` | Telegram completion summary (Stop) |
 | `README.md` | This documentation (English) |
 | `README.zh-TW.md` | Documentation (Traditional Chinese) |

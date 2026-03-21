@@ -14,6 +14,8 @@
 | `notify-on-stop.sh` | Stop | Claude 完成時桌面/tmux 通知（30 秒門檻）|
 | `context-alert.sh` | Stop | Context 使用超過 80% 或 95% 時警告 |
 | `usage-logger.sh` | Session | 記錄 session 使用量至 `~/.claude/hooks/usage.jsonl` |
+| `tg-notify-pretool.sh` | PreToolUse | Telegram 通知 Bash 指令執行（⚠️ 高風險操作）|
+| `tg-notify-stop.sh` | Stop | Telegram 傳送完成摘要 |
 
 ## 安裝 / 移除
 
@@ -41,6 +43,7 @@ Hooks 分為兩個層級：
 - `auto-format.sh` — 需要已安裝格式化工具
 - `context-alert.sh` — 接近 context 上限時有用
 - `usage-logger.sh` — 建立持久化日誌檔案
+- `tg-notify-pretool.sh` + `tg-notify-stop.sh` — 需要 Telegram Bot 憑證
 
 ## Hook 詳細說明
 
@@ -143,12 +146,37 @@ JSONL 格式：
 
 需要 statusline 元件提供 session 狀態檔案。
 
+### tg-notify-pretool.sh
+
+在 `Bash` 工具呼叫的 `PreToolUse` 事件觸發。Claude 執行的每個指令都會送出 Telegram 通知 — 高風險模式（ssh、docker、rm、reboot 等）使用 ⚠️，一般指令使用 ⚙️。訊息包含指令前 200 字元。
+
+需要在 `~/.claude/.env` 設定 `TG_TOKEN` 和 `TG_CHAT_ID`。見下方 [Telegram Bot 設定](#telegram-bot-設定)。
+
+### tg-notify-stop.sh
+
+在 `Stop` 事件觸發。傳送 ✅ Telegram 訊息，內含 Claude 最後回應的前 300 字元作為摘要。若無 assistant 訊息則靜默跳過。
+
+需要在 `~/.claude/.env` 設定 `TG_TOKEN` 和 `TG_CHAT_ID`。
+
+## Telegram Bot 設定
+
+1. 透過 [@BotFather](https://t.me/BotFather) 建立 bot，儲存 token
+2. 傳任意訊息給你的 bot，開啟 `https://api.telegram.org/bot<TOKEN>/getUpdates` 找到 Chat ID
+3. 加入 `~/.claude/.env`：
+
+```bash
+TG_TOKEN="your-bot-token"
+TG_CHAT_ID="your-chat-id"
+```
+
 ## 環境變數
 
 | 變數 | 說明 |
 |------|------|
 | `CLAUDE_HOOKS_ALLOW_DANGEROUS` | 設為 `1` 可繞過 safety-guard 攔截 |
 | `CLAUDE_HOOKS_ALLOW_SENSITIVE` | 設為 `1` 可繞過 sensitive-files 攔截 |
+| `TG_TOKEN` | Telegram bot token（tg-notify hooks 使用）|
+| `TG_CHAT_ID` | Telegram chat ID（tg-notify hooks 使用）|
 
 ## 必要條件
 
@@ -171,5 +199,8 @@ JSONL 格式：
 | `notify-on-stop.sh` | 完成通知（Stop）|
 | `context-alert.sh` | Context 使用量警告（Stop）|
 | `usage-logger.sh` | Session 使用量記錄（Session）|
+| `telegram.sh` | Telegram helper（tg-notify hooks 共用）|
+| `tg-notify-pretool.sh` | Telegram Bash 執行通知（PreToolUse）|
+| `tg-notify-stop.sh` | Telegram 完成摘要（Stop）|
 | `README.md` | 英文說明文件 |
 | `README.zh-TW.md` | 繁體中文說明文件 |
