@@ -14,6 +14,7 @@
 | `notify-on-stop.sh` | Stop | Claude 完成時桌面/tmux 通知（30 秒門檻）|
 | `context-alert.sh` | Stop | Context 使用超過 80% 或 95% 時警告 |
 | `usage-logger.sh` | Session | 記錄 session 使用量至 `~/.claude/hooks/usage.jsonl` |
+| `daily-log.sh` | Stop | 將 session 摘要追加至 `~/.claude/daily-draft.md` |
 
 ## 安裝 / 移除
 
@@ -41,6 +42,7 @@ Hooks 分為兩個層級：
 - `auto-format.sh` — 需要已安裝格式化工具
 - `context-alert.sh` — 接近 context 上限時有用
 - `usage-logger.sh` — 建立持久化日誌檔案
+- `daily-log.sh` — 需要 cron 排程發布日誌
 
 ## Hook 詳細說明
 
@@ -143,12 +145,41 @@ JSONL 格式：
 
 需要 statusline 元件提供 session 狀態檔案。
 
+### daily-log.sh
+
+在 `Stop` 事件觸發。將 Claude 最後回應的前 300 字元加上時間戳記追加至 `~/.claude/daily-draft.md`。摘要在一天中持續累積。
+
+透過 cron 執行 `daily-log-publish.sh` 發布日誌：
+
+```
+0 0 * * * sh ~/.claude/hooks/daily-log-publish.sh
+```
+
+在 `~/.claude/.env` 設定：
+
+| 變數 | 說明 |
+|------|------|
+| `DAILY_LOG_MODE` | `local`（預設）— 寫入 `DAILY_LOG_DIR`；`git` — 寫入 `DAILY_LOG_GIT_REPO/logs/` 並推送 |
+| `DAILY_LOG_DIR` | local 模式的日誌目錄（預設：`~/.claude/logs`）|
+| `DAILY_LOG_GIT_REPO` | git 模式的 repo 路徑 |
+| `DAILY_LOG_LLM_URL` | 用於整理日誌的 OpenAI 相容 API 端點（選填）|
+| `DAILY_LOG_LLM_KEY` | LLM API key（選填）|
+| `DAILY_LOG_LLM_MODEL` | 模型名稱（選填，預設：`gpt-4o-mini`）|
+
+未設定 `DAILY_LOG_LLM_URL` 時直接拼接所有 session 摘要，不需要 LLM。支援任何 OpenAI 相容端點。
+
 ## 環境變數
 
 | 變數 | 說明 |
 |------|------|
 | `CLAUDE_HOOKS_ALLOW_DANGEROUS` | 設為 `1` 可繞過 safety-guard 攔截 |
 | `CLAUDE_HOOKS_ALLOW_SENSITIVE` | 設為 `1` 可繞過 sensitive-files 攔截 |
+| `DAILY_LOG_MODE` | `local` 或 `git`（daily-log）|
+| `DAILY_LOG_DIR` | local 模式日誌目錄（daily-log）|
+| `DAILY_LOG_GIT_REPO` | git 模式 repo 路徑（daily-log）|
+| `DAILY_LOG_LLM_URL` | LLM 端點（daily-log）|
+| `DAILY_LOG_LLM_KEY` | LLM API key（daily-log）|
+| `DAILY_LOG_LLM_MODEL` | LLM 模型名稱（daily-log）|
 
 ## 必要條件
 
@@ -171,5 +202,7 @@ JSONL 格式：
 | `notify-on-stop.sh` | 完成通知（Stop）|
 | `context-alert.sh` | Context 使用量警告（Stop）|
 | `usage-logger.sh` | Session 使用量記錄（Session）|
+| `daily-log.sh` | 追加 session 摘要至草稿（Stop）|
+| `daily-log-publish.sh` | 整合草稿並儲存日誌（cron）|
 | `README.md` | 英文說明文件 |
 | `README.zh-TW.md` | 繁體中文說明文件 |

@@ -14,6 +14,7 @@ Ready-to-use hook scripts for automating Claude Code workflows. Hooks integrate 
 | `notify-on-stop.sh` | Stop | Desktop/tmux notification when Claude finishes (30s threshold) |
 | `context-alert.sh` | Stop | Warn when context usage exceeds 80% or 95% |
 | `usage-logger.sh` | Session | Log session usage to `~/.claude/hooks/usage.jsonl` |
+| `daily-log.sh` | Stop | Append session summary to `~/.claude/daily-draft.md` |
 
 ## Install / Uninstall
 
@@ -41,6 +42,7 @@ Hooks are split into two tiers:
 - `auto-format.sh` — requires formatters to be installed
 - `context-alert.sh` — useful when nearing context limits
 - `usage-logger.sh` — creates a persistent log file
+- `daily-log.sh` — requires a cron job for publishing
 
 ## Hook Details
 
@@ -143,12 +145,41 @@ Fields:
 
 Requires the statusline component for session state files.
 
+### daily-log.sh
+
+Fires on `Stop` events. Appends the first 300 characters of Claude's last response with a timestamp to `~/.claude/daily-draft.md`. Summaries accumulate throughout the day.
+
+To publish, run `daily-log-publish.sh` via cron:
+
+```
+0 0 * * * sh ~/.claude/hooks/daily-log-publish.sh
+```
+
+Configure in `~/.claude/.env`:
+
+| Variable | Description |
+|----------|-------------|
+| `DAILY_LOG_MODE` | `local` (default) — write to `DAILY_LOG_DIR`; `git` — write to `DAILY_LOG_GIT_REPO/logs/` and push |
+| `DAILY_LOG_DIR` | Log directory for local mode (default: `~/.claude/logs`) |
+| `DAILY_LOG_GIT_REPO` | Git repo path for git mode |
+| `DAILY_LOG_LLM_URL` | OpenAI-compatible API endpoint for summarization (optional) |
+| `DAILY_LOG_LLM_KEY` | API key for the LLM endpoint (optional) |
+| `DAILY_LOG_LLM_MODEL` | Model name (optional, default: `gpt-4o-mini`) |
+
+If `DAILY_LOG_LLM_URL` is not set, session summaries are concatenated without AI processing. Supports any OpenAI-compatible endpoint: OpenAI, Claude API (via proxy), Ollama, LiteLLM, etc.
+
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `CLAUDE_HOOKS_ALLOW_DANGEROUS` | Set to `1` to bypass safety-guard blocks |
 | `CLAUDE_HOOKS_ALLOW_SENSITIVE` | Set to `1` to bypass sensitive-files blocks |
+| `DAILY_LOG_MODE` | `local` or `git` (daily-log) |
+| `DAILY_LOG_DIR` | Log directory for local mode (daily-log) |
+| `DAILY_LOG_GIT_REPO` | Git repo path for git mode (daily-log) |
+| `DAILY_LOG_LLM_URL` | LLM endpoint for log summarization (daily-log) |
+| `DAILY_LOG_LLM_KEY` | LLM API key (daily-log) |
+| `DAILY_LOG_LLM_MODEL` | LLM model name (daily-log) |
 
 ## Prerequisites
 
@@ -171,5 +202,7 @@ Requires the statusline component for session state files.
 | `notify-on-stop.sh` | Completion notifier (Stop) |
 | `context-alert.sh` | Context usage alerter (Stop) |
 | `usage-logger.sh` | Session usage logger (Session) |
+| `daily-log.sh` | Append session summary to draft (Stop) |
+| `daily-log-publish.sh` | Consolidate draft and store log (cron) |
 | `README.md` | This documentation (English) |
 | `README.zh-TW.md` | Documentation (Traditional Chinese) |

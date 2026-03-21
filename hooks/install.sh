@@ -28,7 +28,8 @@ if [ "$1" = "--relink" ]; then
     _fixed=0
     _ok=0
     for script in safety-guard.sh sensitive-files.sh auto-format.sh \
-                  notify-on-stop.sh context-alert.sh usage-logger.sh; do
+                  notify-on-stop.sh context-alert.sh usage-logger.sh \
+                  daily-log.sh daily-log-publish.sh; do
         _target="$HOOKS_DIR/$script"
         if [ -L "$_target" ]; then
             if [ -e "$_target" ]; then
@@ -95,7 +96,8 @@ mkdir -p "$HOOKS_DIR" "$HOOKS_DIR/sessions"
 
 _skipped=""
 for script in safety-guard.sh sensitive-files.sh auto-format.sh \
-              notify-on-stop.sh context-alert.sh usage-logger.sh; do
+              notify-on-stop.sh context-alert.sh usage-logger.sh \
+              daily-log.sh daily-log-publish.sh; do
     _target="$HOOKS_DIR/$script"
     if [ -e "$_target" ] && [ ! -L "$_target" ]; then
         warn "Skipped: $_target already exists (not a symlink)."
@@ -134,6 +136,18 @@ printf '> '
 read -r _answer
 case "$_answer" in
     [Yy]*) _install_optional=1 ;;
+esac
+
+printf '\n'
+printf 'Enable daily work log? [y/N]\n'
+printf '  - daily-log          Append session summary to draft at each Stop\n'
+printf '  Configure DAILY_LOG_MODE (local/git) and paths in ~/.claude/.env\n'
+printf '  Then add cron: 0 0 * * * sh ~/.claude/hooks/daily-log-publish.sh\n'
+printf '> '
+read -r _answer
+_install_daily_log=0
+case "$_answer" in
+    [Yy]*) _install_daily_log=1 ;;
 esac
 
 # ── Step 5: Backup settings.json ─────────────────────────────────────────────
@@ -201,6 +215,14 @@ if [ "$_install_optional" = "1" ]; then
     fi
 fi
 
+# Daily log hook
+if [ "$_install_daily_log" = "1" ]; then
+    _jq_filter="$_jq_filter"'
+    | if ([(.hooks.Stop // [])[] | .hooks[]? | .command // ""] | any(test("hooks/daily-log"))) then .
+      else .hooks.Stop = ((.hooks.Stop // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/daily-log.sh"}]}])
+      end'
+fi
+
 # Step 7: Stop array ordering enforcement
 _jq_filter="$_jq_filter"'
 | if .hooks.Stop then
@@ -224,6 +246,11 @@ if [ "$_install_recommended" = "1" ]; then
 fi
 if [ "$_install_optional" = "1" ]; then
     info "Enabled: auto-format, usage-logger, context-alert"
+fi
+if [ "$_install_daily_log" = "1" ]; then
+    info "Enabled: daily-log (Stop hook)"
+    warn "Configure ~/.claude/.env and add cron to publish logs:"
+    printf '    0 0 * * * sh ~/.claude/hooks/daily-log-publish.sh\n'
 fi
 echo ""
 info "Restart Claude Code to activate hooks."
