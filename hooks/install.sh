@@ -28,7 +28,8 @@ if [ "$1" = "--relink" ]; then
     _fixed=0
     _ok=0
     for script in safety-guard.sh sensitive-files.sh auto-format.sh \
-                  notify-on-stop.sh context-alert.sh usage-logger.sh; do
+                  notify-on-stop.sh context-alert.sh usage-logger.sh \
+                  telegram.sh tg-notify-pretool.sh tg-notify-stop.sh; do
         _target="$HOOKS_DIR/$script"
         if [ -L "$_target" ]; then
             if [ -e "$_target" ]; then
@@ -95,7 +96,8 @@ mkdir -p "$HOOKS_DIR" "$HOOKS_DIR/sessions"
 
 _skipped=""
 for script in safety-guard.sh sensitive-files.sh auto-format.sh \
-              notify-on-stop.sh context-alert.sh usage-logger.sh; do
+              notify-on-stop.sh context-alert.sh usage-logger.sh \
+              telegram.sh tg-notify-pretool.sh tg-notify-stop.sh; do
     _target="$HOOKS_DIR/$script"
     if [ -e "$_target" ] && [ ! -L "$_target" ]; then
         warn "Skipped: $_target already exists (not a symlink)."
@@ -123,6 +125,18 @@ printf '> '
 read -r _answer
 case "$_answer" in
     [Nn]*) _install_recommended=0 ;;
+esac
+
+printf '\n'
+printf 'Enable Telegram notifications? [y/N]\n'
+printf '  - tg-notify-pretool  Alert on every Bash command (⚠️  for high-risk)\n'
+printf '  - tg-notify-stop     Send completion summary to Telegram\n'
+printf '  Requires TG_TOKEN and TG_CHAT_ID in ~/.claude/.env\n'
+printf '> '
+read -r _answer
+_install_telegram=0
+case "$_answer" in
+    [Yy]*) _install_telegram=1 ;;
 esac
 
 printf '\n'
@@ -201,6 +215,21 @@ if [ "$_install_optional" = "1" ]; then
     fi
 fi
 
+# Telegram hooks
+if [ "$_install_telegram" = "1" ]; then
+    # tg-notify-pretool (PreToolUse: Bash)
+    _jq_filter="$_jq_filter"'
+    | if ([(.hooks.PreToolUse // [])[] | .hooks[]? | .command // ""] | any(test("hooks/tg-notify-pretool"))) then .
+      else .hooks.PreToolUse = ((.hooks.PreToolUse // []) + [{"matcher":"Bash","hooks":[{"type":"command","command":"sh ~/.claude/hooks/tg-notify-pretool.sh"}]}])
+      end'
+
+    # tg-notify-stop (Stop)
+    _jq_filter="$_jq_filter"'
+    | if ([(.hooks.Stop // [])[] | .hooks[]? | .command // ""] | any(test("hooks/tg-notify-stop"))) then .
+      else .hooks.Stop = ((.hooks.Stop // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/tg-notify-stop.sh"}]}])
+      end'
+fi
+
 # Step 7: Stop array ordering enforcement
 _jq_filter="$_jq_filter"'
 | if .hooks.Stop then
@@ -224,6 +253,10 @@ if [ "$_install_recommended" = "1" ]; then
 fi
 if [ "$_install_optional" = "1" ]; then
     info "Enabled: auto-format, usage-logger, context-alert"
+fi
+if [ "$_install_telegram" = "1" ]; then
+    info "Enabled: tg-notify-pretool, tg-notify-stop"
+    warn "Add TG_TOKEN and TG_CHAT_ID to ~/.claude/.env to activate"
 fi
 echo ""
 info "Restart Claude Code to activate hooks."
