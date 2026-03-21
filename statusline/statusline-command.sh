@@ -158,7 +158,7 @@ if [ -z "$_parsed" ]; then
     exit 1
 fi
 
-_US=$(printf '\x1f')
+_US=$(printf '\037')
 IFS="$_US" read -r model used_pct total_input total_output cost_usd exceeds_200k project_dir duration_ms lines_added lines_removed cc_version vim_mode rate5h_pct rate5h_remaining_min rate7d_pct rate7d_remaining_min <<EOF
 $_parsed
 EOF
