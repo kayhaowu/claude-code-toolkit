@@ -326,12 +326,20 @@ fmt_remaining() {
 
 # Render a single rate sub-widget: label + dots + pct + time
 # Returns 1 if data is absent (-1).
+# Shows dim color + "~" suffix when resets_at has passed (stale data).
 _render_rate() {
     _rr_label="$1"; _rr_pct_raw="$2"; _rr_remain="$3"
     case "$_rr_pct_raw" in ''|-1) return 1 ;; esac
     _rr_pct=$(LC_ALL=C printf "%.0f" "$_rr_pct_raw")
     [ "$_rr_pct" -gt 100 ] && _rr_pct=100
-    if [ "$_rr_pct" -ge 100 ]; then
+    # Check if rate window has reset (remaining <= 0 means resets_at is in the past)
+    _rr_stale=0
+    case "$_rr_remain" in ''|-1) ;; *)
+        [ "$_rr_remain" -le 0 ] 2>/dev/null && _rr_stale=1
+    ;; esac
+    if [ "$_rr_stale" -eq 1 ]; then
+        _rr_c="$C_SEP"; _rr_suffix="~"
+    elif [ "$_rr_pct" -ge 100 ]; then
         _rr_c="$C_ALERT"; _rr_suffix="!"
     elif [ "$_rr_pct" -gt 80 ]; then
         _rr_c="$C_CTX_BAD"; _rr_suffix=""
