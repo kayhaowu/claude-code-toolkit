@@ -403,10 +403,10 @@ while true; do
             if [[ -z "$_selected_key" ]]; then
                 # Interactive picker
                 printf "\n  ${BOLD}Select icon to customize:${NC}\n"
-                local _num=1
+                _num=1
                 for k in "${ICON_KEYS[@]}"; do
-                    local _cur="${ICONS[$k]}"
-                    local _def="${ICON_DEFAULT[$k]}"
+                    _cur="${ICONS[$k]}"
+                    _def="${ICON_DEFAULT[$k]}"
                     if [[ "$_cur" != "$_def" ]]; then
                         printf "   ${CYAN}%2d.${NC} %-14s ${GREEN}%s${NC} ${DIM}(default: %s)${NC}\n" "$_num" "$k" "$_cur" "${_def:-none}"
                     else
@@ -439,8 +439,8 @@ while true; do
                 esac
             fi
             # Edit the selected icon
-            local _cur="${ICONS[$_selected_key]}"
-            local _def="${ICON_DEFAULT[$_selected_key]}"
+            _cur="${ICONS[$_selected_key]}"
+            _def="${ICON_DEFAULT[$_selected_key]}"
             printf "  ${BOLD}%s${NC} — %s\n" "$_selected_key" "${ICON_DESC[$_selected_key]}"
             printf "  Current: ${GREEN}%s${NC} ${DIM}(default: %s)${NC}\n" "${_cur:-none}" "${_def:-none}"
             printf "  New icon (enter = reset to default): "
