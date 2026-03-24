@@ -116,6 +116,50 @@ Supports **two-line display**: widgets can be assigned to Line 1 or Line 2. Conf
 
 Without a config file, defaults to: `model | bar | ctx | tokens | git | project` (v1.x compatible).
 
+### Icon Customization
+
+Widget icons can be customized via the configure.sh TUI or by editing `~/.claude/statusline-icons.conf`:
+
+```bash
+# In the TUI:
+> i              # Interactive picker — select by number
+> i git          # Direct edit shortcut
+> ir             # Reset all icons to defaults
+
+# Or edit directly:
+cat ~/.claude/statusline-icons.conf
+```
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `model` | (none) | Model name prefix |
+| `ctx` | (none) | Context % prefix |
+| `tokens` | (none) | Token count prefix |
+| `cost` | (none) | Cost prefix |
+| `duration` | (none) | Duration prefix |
+| `lines` | (none) | Lines changed prefix |
+| `alert` | `⚠` | Alert icon |
+| `git` | `` | Git branch icon |
+| `project` | (none) | Project name prefix |
+| `version` | (none) | Version prefix |
+| `rate_filled` | `●` | Rate limit filled dot |
+| `rate_empty` | `○` | Rate limit empty dot |
+
+Example config:
+
+```
+model=🤖
+git=🔀
+cost=💰
+project=📁
+rate_filled=🟢
+rate_empty=⚪
+```
+
+Result: `🤖 Opus 4.6 │ 🔀 main │ 🟢🟢⚪⚪⚪ 42% 2h31m │ 💰 $3.52 │ 📁 my-project`
+
+Only non-default values are saved. Changes take effect on the next statusline refresh (no restart needed).
+
 ### Additional Features
 
 - **Context % Color**: Changes color by usage — ≤60% normal, 60-80% warning, >80% danger
@@ -252,7 +296,7 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 |------|-------------|
 | `install.sh` | One-click installer (symlinks auto-update via `git pull`) |
 | `uninstall.sh` | One-click uninstaller |
-| `configure.sh` | Interactive widget configurator (choose fields, lines, order) |
+| `configure.sh` | Interactive widget & icon configurator (choose fields, lines, order, icons) |
 | `statusline-command.sh` | Status line script (symlinked to `~/.claude/` after install) |
 | `dashboard.sh` | Multi-instance dashboard (symlinked to `~/.claude/` after install) |
 | `heartbeat.sh` | Heartbeat daemon, requires bash 4.2+ (symlinked to `~/.claude/` after install) |

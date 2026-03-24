@@ -116,6 +116,50 @@ bash ~/.claude/configure.sh
 
 若未建立設定檔，預設顯示：`model | bar | ctx | tokens | git | project`（與 v1.x 相容）。
 
+### 圖示自訂
+
+Widget 圖示可透過 configure.sh TUI 或直接編輯 `~/.claude/statusline-icons.conf` 自訂：
+
+```bash
+# 在 TUI 中：
+> i              # 互動式選擇 — 用數字選取
+> i git          # 直接編輯快捷方式
+> ir             # 重置所有圖示為預設
+
+# 或直接編輯：
+cat ~/.claude/statusline-icons.conf
+```
+
+| Key | 預設 | 說明 |
+|-----|------|------|
+| `model` | （無）| 模型名稱前綴 |
+| `ctx` | （無）| Context % 前綴 |
+| `tokens` | （無）| Token 數前綴 |
+| `cost` | （無）| 花費前綴 |
+| `duration` | （無）| 持續時間前綴 |
+| `lines` | （無）| 變更量前綴 |
+| `alert` | `⚠` | 警告圖示 |
+| `git` | `` | Git 分支圖示 |
+| `project` | （無）| 專案名稱前綴 |
+| `version` | （無）| 版本前綴 |
+| `rate_filled` | `●` | Rate limit 填滿符號 |
+| `rate_empty` | `○` | Rate limit 空白符號 |
+
+設定範例：
+
+```
+model=🤖
+git=🔀
+cost=💰
+project=📁
+rate_filled=🟢
+rate_empty=⚪
+```
+
+效果：`🤖 Opus 4.6 │ 🔀 main │ 🟢🟢⚪⚪⚪ 42% 2h31m │ 💰 $3.52 │ 📁 my-project`
+
+僅儲存非預設值。變更在下次 statusline 刷新時生效（不需重啟）。
+
 ### 額外顯示功能
 
 - **Context % 顏色**：依使用率變色 — ≤60% 正常、60-80% 警告、>80% 危險
@@ -252,7 +296,7 @@ cp ~/.claude/settings.json.backup ~/.claude/settings.json
 |------|------|
 | `install.sh` | 一鍵安裝腳本（符號連結方式，`git pull` 自動更新） |
 | `uninstall.sh` | 一鍵移除腳本 |
-| `configure.sh` | 互動式 Widget 設定工具（選擇顯示欄位、行數、順序） |
+| `configure.sh` | 互動式 Widget 與圖示設定工具（選擇欄位、行數、順序、圖示） |
 | `statusline-command.sh` | 狀態列腳本（安裝後以符號連結至 `~/.claude/`） |
 | `dashboard.sh` | 多實例 Dashboard（安裝後以符號連結至 `~/.claude/`） |
 | `heartbeat.sh` | 心跳 Daemon，需要 bash 4.2+（安裝後以符號連結至 `~/.claude/`） |
