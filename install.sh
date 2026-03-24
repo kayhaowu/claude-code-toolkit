@@ -1,9 +1,11 @@
 #!/bin/sh
 # One-line installer for claude-code-toolkit
 # Usage: curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/main/install.sh | bash
+# Branch: INSTALL_BRANCH=feat/my-branch curl -fsSL .../install.sh | bash
 set -e
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.claude-code-toolkit}"
+INSTALL_BRANCH="${INSTALL_BRANCH:-main}"
 REPO_URL="https://github.com/kayhaowu/claude-code-toolkit.git"
 
 # ── Color output helpers ──────────────────────────────────────────────────────
@@ -146,18 +148,20 @@ Remove it manually and re-run:  rm -rf $INSTALL_DIR"
     fi
 
     info "Existing installation found. Updating..."
-    if ! git -C "$INSTALL_DIR" pull origin main; then
-        error "git pull failed. See the error above for details.
+    if ! git -C "$INSTALL_DIR" fetch origin "$INSTALL_BRANCH"; then
+        error "git fetch failed. See the error above for details.
 Common fixes:
-  Local changes:  cd $INSTALL_DIR && git stash && git pull origin main
+  Local changes:  cd $INSTALL_DIR && git stash && git pull
   Network issue:  check your connection and retry"
     fi
-    success "Updated to latest version."
+    git -C "$INSTALL_DIR" checkout "$INSTALL_BRANCH" 2>/dev/null || git -C "$INSTALL_DIR" checkout -b "$INSTALL_BRANCH" "origin/$INSTALL_BRANCH"
+    git -C "$INSTALL_DIR" pull origin "$INSTALL_BRANCH"
+    success "Updated to latest ($INSTALL_BRANCH)."
 else
     info "Installing claude-code-toolkit..."
     _fresh_install=true
-    git clone --depth 1 --single-branch "$REPO_URL" "$INSTALL_DIR"
-    success "Cloned to $INSTALL_DIR"
+    git clone --depth 1 --single-branch -b "$INSTALL_BRANCH" "$REPO_URL" "$INSTALL_DIR"
+    success "Cloned to $INSTALL_DIR ($INSTALL_BRANCH)"
 fi
 
 # ── Step 3: Setup tmux environment (TPM + plugins + tmux.conf) ────────────────
@@ -217,11 +221,11 @@ fi
 
 # ── Step 4: Print next steps ──────────────────────────────────────────────────
 echo ""
-success "claude-code-toolkit is ready!"
+success "claude-code-toolkit is ready! (branch: $INSTALL_BRANCH)"
 echo ""
 info "Available modules:"
 echo "  bash $INSTALL_DIR/statusline/install.sh   — Status line + tmux integration"
 echo "  bash $INSTALL_DIR/hooks/install.sh         — Safety hooks collection"
 echo ""
-info "Update:     cd $INSTALL_DIR && git pull"
+info "Update:     cd $INSTALL_DIR && git pull origin $INSTALL_BRANCH"
 info "Uninstall:  bash $INSTALL_DIR/uninstall.sh"
