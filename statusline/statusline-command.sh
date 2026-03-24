@@ -128,6 +128,35 @@ else
     _widgets_l2=""
 fi
 
+# ── Load icon overrides ──────────────────────────────────────────────────────
+_icon_conf="${CLAUDE_STATUSLINE_ICONS_CONF:-$HOME/.claude/statusline-icons.conf}"
+# Defaults
+_ic_model="" _ic_ctx="" _ic_tokens="" _ic_cost="" _ic_duration=""
+_ic_lines="" _ic_alert="⚠" _ic_git="" _ic_project="" _ic_version=""
+_ic_rate_filled="●" _ic_rate_empty="○"
+if [ "$_theme" = "none" ]; then
+    _ic_alert="!" _ic_git="" _ic_rate_filled="*" _ic_rate_empty="."
+fi
+if [ -f "$_icon_conf" ]; then
+    while IFS='=' read -r _ik _iv || [ -n "$_ik" ]; do
+        case "$_ik" in \#*|"") continue ;; esac
+        case "$_ik" in
+            model)       _ic_model="$_iv" ;;
+            ctx)         _ic_ctx="$_iv" ;;
+            tokens)      _ic_tokens="$_iv" ;;
+            cost)        _ic_cost="$_iv" ;;
+            duration)    _ic_duration="$_iv" ;;
+            lines)       _ic_lines="$_iv" ;;
+            alert)       _ic_alert="$_iv" ;;
+            git)         _ic_git="$_iv" ;;
+            project)     _ic_project="$_iv" ;;
+            version)     _ic_version="$_iv" ;;
+            rate_filled) _ic_rate_filled="$_iv" ;;
+            rate_empty)  _ic_rate_empty="$_iv" ;;
+        esac
+    done < "$_icon_conf"
+fi
+
 # ── Parse JSON input (single jq call) ───────────────────────────────────────
 _now=$(date +%s)
 
@@ -286,7 +315,7 @@ if [ -n "$cc_version" ] && [ "$cc_version" != "null" ]; then
 fi
 
 # ── Rate limit helpers ──────────────────────────────────────────────────────
-# Build a 5-dot bar: filled=● empty=○ (none theme: */.)
+# Build a 5-dot bar using customizable filled/empty icons
 build_dots() {
     _bd_pct="$1"
     _bd_filled=$(( _bd_pct / 20 ))
@@ -296,12 +325,12 @@ build_dots() {
     _bd_out=""
     _bd_i=0
     while [ "$_bd_i" -lt "$_bd_filled" ]; do
-        if [ "$_theme" = "none" ]; then _bd_out="${_bd_out}*"; else _bd_out="${_bd_out}●"; fi
+        _bd_out="${_bd_out}${_ic_rate_filled}"
         _bd_i=$(( _bd_i + 1 ))
     done
     _bd_i=0
     while [ "$_bd_i" -lt "$_bd_empty" ]; do
-        if [ "$_theme" = "none" ]; then _bd_out="${_bd_out}."; else _bd_out="${_bd_out}○"; fi
+        _bd_out="${_bd_out}${_ic_rate_empty}"
         _bd_i=$(( _bd_i + 1 ))
     done
     printf '%s' "$_bd_out"
@@ -359,17 +388,17 @@ _render_rate() {
 # ── Render widget ────────────────────────────────────────────────────────────
 render_widget() {
     case "$1" in
-        model)    printf '%b' "${C_MODEL}${model}${C_RESET}" ;;
+        model)    printf '%b' "${C_MODEL}${_ic_model:+${_ic_model} }${model}${C_RESET}" ;;
         bar)      printf '%b' "[${C_BAR_FILL}${filled_bar}${C_BAR_EMPTY}${empty_bar}${C_RESET}]" ;;
-        ctx)      printf '%b' "${C_CTX}${pct_str}${C_RESET}" ;;
-        tokens)   printf '%b' "${C_TOKENS}${tokens_str} tokens${C_RESET}" ;;
-        cost)     [ -n "$cost_str" ] && printf '%b' "${C_COST}${cost_str}${C_RESET}" || return 1 ;;
-        duration) [ -n "$duration_str" ] && printf '%b' "${C_COST}${duration_str}${C_RESET}" || return 1 ;;
-        lines)    [ -n "$lines_str" ] && printf '%b' "${C_TOKENS}${lines_str}${C_RESET}" || return 1 ;;
-        alert)    [ "$exceeds_200k" = "true" ] && printf '%b' "${C_ALERT}⚠ 200k${C_RESET}" || return 1 ;;
-        git)      [ -n "$git_branch" ] && printf '%b' "${C_BRANCH} ${git_branch}${C_RESET}" || return 1 ;;
-        project)  printf '%b' "${C_PROJECT}${project_name}${C_RESET}" ;;
-        version)  [ -n "$version_str" ] && printf '%b' "${C_SEP}${version_str}${C_RESET}" || return 1 ;;
+        ctx)      printf '%b' "${C_CTX}${_ic_ctx:+${_ic_ctx} }${pct_str}${C_RESET}" ;;
+        tokens)   printf '%b' "${C_TOKENS}${_ic_tokens:+${_ic_tokens} }${tokens_str} tokens${C_RESET}" ;;
+        cost)     [ -n "$cost_str" ] && printf '%b' "${C_COST}${_ic_cost:+${_ic_cost} }${cost_str}${C_RESET}" || return 1 ;;
+        duration) [ -n "$duration_str" ] && printf '%b' "${C_COST}${_ic_duration:+${_ic_duration} }${duration_str}${C_RESET}" || return 1 ;;
+        lines)    [ -n "$lines_str" ] && printf '%b' "${C_TOKENS}${_ic_lines:+${_ic_lines} }${lines_str}${C_RESET}" || return 1 ;;
+        alert)    [ "$exceeds_200k" = "true" ] && printf '%b' "${C_ALERT}${_ic_alert} 200k${C_RESET}" || return 1 ;;
+        git)      [ -n "$git_branch" ] && printf '%b' "${C_BRANCH}${_ic_git} ${git_branch}${C_RESET}" || return 1 ;;
+        project)  printf '%b' "${C_PROJECT}${_ic_project:+${_ic_project} }${project_name}${C_RESET}" ;;
+        version)  [ -n "$version_str" ] && printf '%b' "${C_SEP}${_ic_version:+${_ic_version} }${version_str}${C_RESET}" || return 1 ;;
         vim)
             case "$vim_mode" in
                 INSERT*) printf '%b' "${C_ALERT}[INSERT]${C_RESET}" ;;
