@@ -122,7 +122,7 @@ Widget icons can be customized via the configure.sh TUI or by editing `~/.claude
 
 ```bash
 # In the TUI:
-> i              # Interactive picker — select by number
+> i              # Interactive picker — select by number or name
 > i git          # Direct edit shortcut
 > ir             # Reset all icons to defaults
 
@@ -139,13 +139,15 @@ cat ~/.claude/statusline-icons.conf
 | `duration` | (none) | Duration prefix |
 | `lines` | (none) | Lines changed prefix |
 | `alert` | `⚠` | Alert icon |
-| `git` | `` | Git branch icon |
+| `git` | (none) | Git branch icon |
 | `project` | (none) | Project name prefix |
 | `version` | (none) | Version prefix |
 | `rate_filled` | `●` | Rate limit filled dot |
 | `rate_empty` | `○` | Rate limit empty dot |
 
-Example config:
+> When using the `none` theme (`NO_COLOR=1`), defaults for `alert`, `rate_filled`, and `rate_empty` change to `!`, `*`, `.` (ASCII-safe).
+
+Example config and result (with widget layout: `model | git | rate5h | cost | project`):
 
 ```
 model=🤖
@@ -158,7 +160,7 @@ rate_empty=⚪
 
 Result: `🤖 Opus 4.6 │ 🔀 main │ 🟢🟢⚪⚪⚪ 42% 2h31m │ 💰 $3.52 │ 📁 my-project`
 
-Only non-default values are saved. Changes take effect on the next statusline refresh (no restart needed).
+Only non-default values are saved. Changes apply on the next statusline refresh (no restart needed).
 
 ### Additional Features
 

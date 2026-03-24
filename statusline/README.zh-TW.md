@@ -122,7 +122,7 @@ Widget 圖示可透過 configure.sh TUI 或直接編輯 `~/.claude/statusline-ic
 
 ```bash
 # 在 TUI 中：
-> i              # 互動式選擇 — 用數字選取
+> i              # 互動式選擇 — 用數字或名稱選取
 > i git          # 直接編輯快捷方式
 > ir             # 重置所有圖示為預設
 
@@ -139,13 +139,15 @@ cat ~/.claude/statusline-icons.conf
 | `duration` | （無）| 持續時間前綴 |
 | `lines` | （無）| 變更量前綴 |
 | `alert` | `⚠` | 警告圖示 |
-| `git` | `` | Git 分支圖示 |
+| `git` | （無）| Git 分支圖示 |
 | `project` | （無）| 專案名稱前綴 |
 | `version` | （無）| 版本前綴 |
 | `rate_filled` | `●` | Rate limit 填滿符號 |
 | `rate_empty` | `○` | Rate limit 空白符號 |
 
-設定範例：
+> 使用 `none` 主題（`NO_COLOR=1`）時，`alert`、`rate_filled`、`rate_empty` 的預設值會分別變為 `!`、`*`、`.`（純 ASCII）。
+
+設定範例與效果（Widget 配置為 `model | git | rate5h | cost | project`）：
 
 ```
 model=🤖
