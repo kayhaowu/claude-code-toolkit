@@ -388,17 +388,17 @@ _render_rate() {
 # ── Render widget ────────────────────────────────────────────────────────────
 render_widget() {
     case "$1" in
-        model)    printf '%b' "${C_MODEL}${_ic_model:+${_ic_model} }${model}${C_RESET}" ;;
+        model)    printf '%b%s%b' "${C_MODEL}" "${_ic_model:+${_ic_model} }${model}" "${C_RESET}" ;;
         bar)      printf '%b' "[${C_BAR_FILL}${filled_bar}${C_BAR_EMPTY}${empty_bar}${C_RESET}]" ;;
-        ctx)      printf '%b' "${C_CTX}${_ic_ctx:+${_ic_ctx} }${pct_str}${C_RESET}" ;;
-        tokens)   printf '%b' "${C_TOKENS}${_ic_tokens:+${_ic_tokens} }${tokens_str} tokens${C_RESET}" ;;
-        cost)     [ -n "$cost_str" ] && printf '%b' "${C_COST}${_ic_cost:+${_ic_cost} }${cost_str}${C_RESET}" || return 1 ;;
-        duration) [ -n "$duration_str" ] && printf '%b' "${C_COST}${_ic_duration:+${_ic_duration} }${duration_str}${C_RESET}" || return 1 ;;
-        lines)    [ -n "$lines_str" ] && printf '%b' "${C_TOKENS}${_ic_lines:+${_ic_lines} }${lines_str}${C_RESET}" || return 1 ;;
-        alert)    [ "$exceeds_200k" = "true" ] && printf '%b' "${C_ALERT}${_ic_alert} 200k${C_RESET}" || return 1 ;;
-        git)      [ -n "$git_branch" ] && printf '%b' "${C_BRANCH}${_ic_git} ${git_branch}${C_RESET}" || return 1 ;;
-        project)  printf '%b' "${C_PROJECT}${_ic_project:+${_ic_project} }${project_name}${C_RESET}" ;;
-        version)  [ -n "$version_str" ] && printf '%b' "${C_SEP}${_ic_version:+${_ic_version} }${version_str}${C_RESET}" || return 1 ;;
+        ctx)      printf '%b%s%b' "${C_CTX}" "${_ic_ctx:+${_ic_ctx} }${pct_str}" "${C_RESET}" ;;
+        tokens)   printf '%b%s%b' "${C_TOKENS}" "${_ic_tokens:+${_ic_tokens} }${tokens_str} tokens" "${C_RESET}" ;;
+        cost)     [ -n "$cost_str" ] && printf '%b%s%b' "${C_COST}" "${_ic_cost:+${_ic_cost} }${cost_str}" "${C_RESET}" || return 1 ;;
+        duration) [ -n "$duration_str" ] && printf '%b%s%b' "${C_COST}" "${_ic_duration:+${_ic_duration} }${duration_str}" "${C_RESET}" || return 1 ;;
+        lines)    [ -n "$lines_str" ] && printf '%b%s%b' "${C_TOKENS}" "${_ic_lines:+${_ic_lines} }${lines_str}" "${C_RESET}" || return 1 ;;
+        alert)    [ "$exceeds_200k" = "true" ] && printf '%b%s%b' "${C_ALERT}" "${_ic_alert:+${_ic_alert} }200k" "${C_RESET}" || return 1 ;;
+        git)      [ -n "$git_branch" ] && printf '%b%s%b' "${C_BRANCH}" "${_ic_git:+${_ic_git} }${git_branch}" "${C_RESET}" || return 1 ;;
+        project)  printf '%b%s%b' "${C_PROJECT}" "${_ic_project:+${_ic_project} }${project_name}" "${C_RESET}" ;;
+        version)  [ -n "$version_str" ] && printf '%b%s%b' "${C_SEP}" "${_ic_version:+${_ic_version} }${version_str}" "${C_RESET}" || return 1 ;;
         vim)
             case "$vim_mode" in
                 INSERT*) printf '%b' "${C_ALERT}[INSERT]${C_RESET}" ;;

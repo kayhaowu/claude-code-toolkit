@@ -419,10 +419,14 @@ while true; do
                 case "$_pick" in
                     q|"") continue ;;
                     [0-9]*)
+                        if [[ ! "$_pick" =~ ^[0-9]+$ ]]; then
+                            printf "  ${RED}Invalid number${NC}\n"
+                            continue
+                        fi
                         if [[ "$_pick" -ge 1 ]] && [[ "$_pick" -le "${#ICON_KEYS[@]}" ]]; then
                             _selected_key="${ICON_KEYS[$((_pick - 1))]}"
                         else
-                            printf "  ${RED}Invalid number${NC}\n"
+                            printf "  ${RED}Invalid number (1-%d)${NC}\n" "${#ICON_KEYS[@]}"
                             continue
                         fi
                         ;;
@@ -466,6 +470,9 @@ while true; do
         r|reset)
             ACTIVE=(model bar ctx tokens git project)
             ACTIVE_LINE=(1 1 1 1 1 1)
+            for k in "${ICON_KEYS[@]}"; do
+                ICONS[$k]="${ICON_DEFAULT[$k]}"
+            done
             draw_ui
             ;;
 
