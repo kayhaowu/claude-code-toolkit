@@ -128,7 +128,7 @@ xterm-ghostty|ghostty terminal emulator,
     u7=\E[6n, u8=\E[?%[;0123456789]c, u9=\E[c,
     vpa=\E[%i%p1%dd,
 TERMINFO
-        tic -x "$_ghostty_tmpdir/ghostty.terminfo" 2>/dev/null && \
+        tic -x "$_ghostty_tmpdir/ghostty.terminfo" && \
             success "Ghostty terminfo installed." || \
             warn "Ghostty terminfo install failed (non-critical, run: TERM=xterm-256color tmux)"
         rm -rf "$_ghostty_tmpdir"
