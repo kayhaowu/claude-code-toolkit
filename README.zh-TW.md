@@ -43,6 +43,12 @@
 curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/main/install.sh | bash
 ```
 
+安裝特定 branch（適用於 merge 前測試 PR）：
+
+```bash
+INSTALL_BRANCH=fix/my-feature curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/fix/my-feature/install.sh | bash
+```
+
 然後啟用需要的模組：
 
 ```bash

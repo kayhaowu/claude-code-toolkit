@@ -43,6 +43,12 @@ After installation in tmux, you get both the Claude Code status line and a tmux 
 curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/main/install.sh | bash
 ```
 
+To install a specific branch (useful for testing PRs before merge):
+
+```bash
+INSTALL_BRANCH=fix/my-feature curl -fsSL https://raw.githubusercontent.com/kayhaowu/claude-code-toolkit/fix/my-feature/install.sh | bash
+```
+
 Then enable the modules you want:
 
 ```bash
