@@ -389,38 +389,68 @@ while true; do
             ;;
 
         i|icon)
-            if [[ -z "$arg" ]]; then
-                printf "  ${BOLD}Available icon keys:${NC}\n"
+            _selected_key=""
+            if [[ -n "$arg" ]]; then
+                # Direct key: i git
+                _valid=0
+                for k in "${ICON_KEYS[@]}"; do
+                    [[ "$k" == "$arg" ]] && _valid=1 && _selected_key="$arg" && break
+                done
+                if [[ $_valid -eq 0 ]]; then
+                    printf "  ${RED}Unknown icon key: %s${NC}\n" "$arg"
+                fi
+            fi
+            if [[ -z "$_selected_key" ]]; then
+                # Interactive picker
+                printf "\n  ${BOLD}Select icon to customize:${NC}\n"
+                local _num=1
                 for k in "${ICON_KEYS[@]}"; do
                     local _cur="${ICONS[$k]}"
                     local _def="${ICON_DEFAULT[$k]}"
                     if [[ "$_cur" != "$_def" ]]; then
-                        printf "   %-14s ${GREEN}%s${NC} ${DIM}(default: %s)${NC}\n" "$k" "$_cur" "${_def:-none}"
+                        printf "   ${CYAN}%2d.${NC} %-14s ${GREEN}%s${NC} ${DIM}(default: %s)${NC}\n" "$_num" "$k" "$_cur" "${_def:-none}"
                     else
-                        printf "   %-14s ${DIM}%s${NC}\n" "$k" "${_cur:-none}"
+                        printf "   ${CYAN}%2d.${NC} %-14s ${DIM}%s${NC}\n" "$_num" "$k" "${_cur:-none}"
                     fi
+                    _num=$((_num + 1))
                 done
-                printf "  ${DIM}Usage: i key  then enter new icon${NC}\n"
-                continue
+                printf "\n  ${DIM}Enter number or key name (q = cancel):${NC} "
+                read -r _pick
+                case "$_pick" in
+                    q|"") continue ;;
+                    [0-9]*)
+                        if [[ "$_pick" -ge 1 ]] && [[ "$_pick" -le "${#ICON_KEYS[@]}" ]]; then
+                            _selected_key="${ICON_KEYS[$((_pick - 1))]}"
+                        else
+                            printf "  ${RED}Invalid number${NC}\n"
+                            continue
+                        fi
+                        ;;
+                    *)
+                        _valid=0
+                        for k in "${ICON_KEYS[@]}"; do
+                            [[ "$k" == "$_pick" ]] && _valid=1 && _selected_key="$_pick" && break
+                        done
+                        if [[ $_valid -eq 0 ]]; then
+                            printf "  ${RED}Unknown: %s${NC}\n" "$_pick"
+                            continue
+                        fi
+                        ;;
+                esac
             fi
-            # Validate key
-            _valid=0
-            for k in "${ICON_KEYS[@]}"; do
-                [[ "$k" == "$arg" ]] && _valid=1 && break
-            done
-            if [[ $_valid -eq 0 ]]; then
-                printf "  ${RED}Unknown icon key: %s${NC}\n" "$arg"
-                printf "  ${DIM}Available: %s${NC}\n" "${ICON_KEYS[*]}"
-                continue
-            fi
-            printf "  Current: ${GREEN}%s${NC} ${DIM}(default: %s)${NC}\n" "${ICONS[$arg]:-none}" "${ICON_DEFAULT[$arg]:-none}"
-            printf "  New icon (empty = reset to default): "
+            # Edit the selected icon
+            local _cur="${ICONS[$_selected_key]}"
+            local _def="${ICON_DEFAULT[$_selected_key]}"
+            printf "  ${BOLD}%s${NC} — %s\n" "$_selected_key" "${ICON_DESC[$_selected_key]}"
+            printf "  Current: ${GREEN}%s${NC} ${DIM}(default: %s)${NC}\n" "${_cur:-none}" "${_def:-none}"
+            printf "  New icon (enter = reset to default): "
             read -r _new_icon
             if [[ -z "$_new_icon" ]]; then
-                ICONS[$arg]="${ICON_DEFAULT[$arg]}"
-                printf "  ${DIM}Reset to default${NC}\n"
+                ICONS[$_selected_key]="${ICON_DEFAULT[$_selected_key]}"
+                printf "  ${DIM}↳ Reset %s to default${NC}\n" "$_selected_key"
             else
-                ICONS[$arg]="$_new_icon"
+                ICONS[$_selected_key]="$_new_icon"
+                printf "  ${GREEN}↳ %s → %s${NC}\n" "$_selected_key" "$_new_icon"
             fi
             draw_ui
             ;;
