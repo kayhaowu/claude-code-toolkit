@@ -21,6 +21,7 @@ C_BAR_E='\033[90m'     # Dark gray    — bar empty
 C_PCT='\033[33m'       # Yellow       — percentage
 C_OUT='\033[36m'       # Cyan         — output tokens
 C_BRANCH='\033[94m'    # Bright blue  — git branch
+C_NAME='\033[0;97m'    # Bright white  — session name/slug
 C_ACT='\033[2;37m'     # Dim white    — last activity text
 C_WORKING='\033[1;33m' # Bold yellow  — WORKING status
 C_IDLE='\033[1;32m'    # Bold green   — IDLE status
@@ -51,6 +52,18 @@ fmt_mem() {
     fi
 }
 
+# CJK-aware column padding: each CJK char is 2 display columns.
+# Uses byte count vs char count difference to detect multi-byte chars.
+pad_wide() {
+    _pw_str="$1"; _pw_width="$2"
+    _pw_bytes=$(printf '%s' "$_pw_str" | wc -c)
+    _pw_chars=$(printf '%s' "$_pw_str" | wc -m)
+    _pw_disp=$(( _pw_chars + (_pw_bytes - _pw_chars) / 2 ))
+    _pw_pad=$(( _pw_width - _pw_disp ))
+    [ "$_pw_pad" -lt 0 ] && _pw_pad=0
+    printf '%s%*s' "$_pw_str" "$_pw_pad" ""
+}
+
 make_bar() {
     pct="$1"; width="${2:-24}"
     filled=$(( pct * width / 100 ))
@@ -70,12 +83,12 @@ render() {
     printf '\n\n'
 
     # Column headers
-    printf '%b%-8s %-18s %-14s %-9s %-26s %-6s %-8s %s%b\n' \
+    printf '%b%-8s %-22s %-14s %-12s %-8s %-24s %-6s %-7s %s%b\n' \
         "$C_HEAD" \
-        'PID' 'PROJECT' 'MODEL' 'STATUS' 'CONTEXT' 'CTX%' 'OUTPUT' 'BRANCH' \
+        'PID' 'NAME' 'PROJECT' 'MODEL' 'STATUS' 'CONTEXT' 'CTX%' 'OUTPUT' 'BRANCH' \
         "$R"
     printf '%b%s%b\n' "$C_SEP" \
-        "------  ----------------  ------------  -------  ------------------------  ----  ------  ----------" \
+        "------  --------------------  ------------  ----------  ------  ----------------------  ----  -----  ----------" \
         "$R"
 
     count=0; total_in=0; total_out=0; total_mem=0
@@ -91,19 +104,42 @@ render() {
             continue
         fi
 
-        epoch=$(jq -r    '.epoch        // 0'  "$f" 2>/dev/null)
-        project=$(jq -r  '.project_name // "unknown"' "$f" 2>/dev/null)
-        model_r=$(jq -r  '.model        // "Unknown"' "$f" 2>/dev/null)
-        status_r=$(jq -r '.status       // ""'  "$f" 2>/dev/null)
-        used_pct=$(jq -r '.used_pct     // 0'   "$f" 2>/dev/null)
-        tokens_in=$(jq -r  '.tokens_in  // 0'   "$f" 2>/dev/null)
-        tokens_out=$(jq -r '.tokens_out // 0'   "$f" 2>/dev/null)
-        branch=$(jq -r   '.git_branch  // ""'   "$f" 2>/dev/null)
-        activity=$(jq -r '.last_activity // ""' "$f" 2>/dev/null)
-        mem_kb=$(jq -r   '.mem_kb      // 0'    "$f" 2>/dev/null)
+        epoch=$(jq -r       '.epoch          // 0'  "$f" 2>/dev/null)
+        project=$(jq -r    '.project_name   // "unknown"' "$f" 2>/dev/null)
+        project_dir=$(jq -r '.project_dir   // ""'  "$f" 2>/dev/null)
+        model_r=$(jq -r    '.model          // "Unknown"' "$f" 2>/dev/null)
+        status_r=$(jq -r   '.status         // ""'  "$f" 2>/dev/null)
+        used_pct=$(jq -r   '.used_pct       // 0'   "$f" 2>/dev/null)
+        tokens_in=$(jq -r  '.tokens_in      // 0'   "$f" 2>/dev/null)
+        tokens_out=$(jq -r '.tokens_out     // 0'   "$f" 2>/dev/null)
+        branch=$(jq -r     '.git_branch     // ""'  "$f" 2>/dev/null)
+        activity=$(jq -r   '.last_activity  // ""'  "$f" 2>/dev/null)
+        mem_kb=$(jq -r     '.mem_kb         // 0'   "$f" 2>/dev/null)
+        session_title=$(jq -r '.session_title // ""' "$f" 2>/dev/null)
 
         # Shorten model name: "Claude Opus 4.6" → "Opus 4.6"
         model=$(printf '%s' "$model_r" | sed 's/^Claude //')
+
+        # Session name: prefer session_title from JSON (written by statusline),
+        # fall back to epoch-mtime JSONL match for the slug field.
+        slug="$session_title"
+        if [ -z "$slug" ] && [ -n "$project_dir" ]; then
+            _proj_key=$(printf '%s' "$project_dir" | tr '/' '-')
+            _proj_jsonl_dir="$HOME/.claude/projects/${_proj_key}"
+            if [ -d "$_proj_jsonl_dir" ]; then
+                _best="" _best_diff=999999
+                for _jf in "$_proj_jsonl_dir"/*.jsonl; do
+                    [ -f "$_jf" ] || continue
+                    _mtime=$(stat -c %Y "$_jf" 2>/dev/null || stat -f %m "$_jf" 2>/dev/null) || continue
+                    _diff=$(( epoch - _mtime ))
+                    [ "$_diff" -lt 0 ] && _diff=$(( -_diff ))
+                    [ "$_diff" -lt "$_best_diff" ] && { _best="$_jf"; _best_diff="$_diff"; }
+                done
+                if [ -n "$_best" ]; then
+                    slug=$(tail -1 "$_best" 2>/dev/null | jq -r '.slug // ""' 2>/dev/null) || slug=""
+                fi
+            fi
+        fi
 
         # Determine display status: prefer event-driven .status file
         disp_status="" _status_epoch=""
@@ -129,18 +165,19 @@ render() {
             *)                                     sc="$C_IDLE";    sl="IDLE"    ;;
         esac
 
-        bar=$(make_bar "$used_pct" 24)
+        bar=$(make_bar "$used_pct" 22)
         out_str=$(fmt_k "$tokens_out")
 
         # Row
-        printf '%b%-8s%b ' "$C_PID"   "$pid"    "$R"
-        printf '%b%-18s%b ' "$C_PROJ" "$project" "$R"
-        printf '%b%-14s%b ' "$C_MODEL" "$model"  "$R"
-        printf '%b%-9s%b '  "$sc"     "$sl"      "$R"
+        printf '%b%-8s%b ' "$C_PID"    "$pid"    "$R"
+        printf '%b' "$C_NAME"; pad_wide "$slug" 22; printf '%b ' "$R"
+        printf '%b%-14s%b ' "$C_PROJ"  "$project" "$R"
+        printf '%b%-12s%b ' "$C_MODEL" "$model"   "$R"
+        printf '%b%-8s%b '  "$sc"      "$sl"      "$R"
         printf '%s '        "$bar"
-        printf '%b%-5s%b '  "$C_PCT"  "${used_pct}%" "$R"
-        printf '%b%-8s%b '  "$C_OUT"  "$out_str"     "$R"
-        printf '%b%s%b\n'   "$C_BRANCH" "$branch"    "$R"
+        printf '%b%-6s%b '  "$C_PCT"   "${used_pct}%" "$R"
+        printf '%b%-7s%b '  "$C_OUT"   "$out_str"     "$R"
+        printf '%b%s%b\n'   "$C_BRANCH" "$branch"     "$R"
 
         # Last activity (truncated to 110 chars)
         if [ -n "$activity" ] && [ "$activity" != "null" ]; then
