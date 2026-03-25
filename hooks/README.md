@@ -11,6 +11,7 @@ Ready-to-use hook scripts for automating Claude Code workflows. Hooks integrate 
 | `safety-guard.sh` | PreToolUse | Block dangerous commands (rm -rf /, force push, DROP TABLE) |
 | `sensitive-files.sh` | PreToolUse | Block access to .env, credentials, *.key files |
 | `auto-format.sh` | PostToolUse | Auto-format files after edit (prettier/black/gofmt/clang-format) |
+| `status-hook.sh` | UserPromptSubmit / Stop / PermissionRequest | Write session status to `.status` file for dashboard and notify-on-stop |
 | `notify-on-stop.sh` | Stop | Desktop/tmux notification when Claude finishes (30s threshold) |
 | `context-alert.sh` | Stop | Warn when context usage exceeds 80% or 95% |
 | `usage-logger.sh` | Session | Log session usage to `~/.claude/hooks/usage.jsonl` |
@@ -33,6 +34,7 @@ bash hooks/uninstall.sh
 Hooks are split into two tiers:
 
 **Recommended ON (enabled by default):**
+- `status-hook.sh` — writes real-time session status for dashboard and notify-on-stop
 - `notify-on-stop.sh` — desktop/tmux notification when Claude finishes
 - `safety-guard.sh` — blocks destructive commands before they run
 - `sensitive-files.sh` — blocks access to credential files
@@ -92,6 +94,22 @@ Fires on `PostToolUse` for file edit tool calls. Detects the file type and runs 
 | `.sh`, `.bash` | `shfmt` | built-in |
 | `.rb` | `rubocop -a` | built-in |
 | `.java` | `google-java-format` | built-in |
+
+### status-hook.sh
+
+Tracks the real-time status of each Claude session by writing a `.status` file to `~/.claude/sessions/<pid>.status`.
+
+**Format:** `<status> <epoch>`
+
+| Status | Event | Meaning |
+|--------|-------|---------|
+| `working` | UserPromptSubmit | Claude is processing a user message |
+| `waiting` | PermissionRequest | Claude is waiting for tool permission |
+| `idle` | Stop | Claude has finished responding |
+
+When writing `idle`, the hook **preserves the epoch from the last `working` state** rather than using the current time. This lets `notify-on-stop.sh` calculate elapsed working time accurately.
+
+The `.status` file is also read by the dashboard (`statusline/dashboard.sh`) to show real-time status without polling the session JSON.
 
 ### notify-on-stop.sh
 
