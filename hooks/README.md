@@ -104,8 +104,10 @@ Tracks the real-time status of each Claude session by writing a `.status` file t
 | Status | Event | Meaning |
 |--------|-------|---------|
 | `working` | UserPromptSubmit | Claude is processing a user message |
-| `waiting` | PermissionRequest | Claude is waiting for tool permission |
+| `working` | PermissionRequest | Claude is executing a tool |
 | `idle` | Stop | Claude has finished responding |
+
+Both `UserPromptSubmit` and `PermissionRequest` write `working`, so the status stays WORKING throughout the entire response (thinking + tool execution + reply). Only `Stop` transitions to `idle`.
 
 When writing `idle`, the hook **preserves the epoch from the last `working` state** rather than using the current time. This lets `notify-on-stop.sh` calculate elapsed working time accurately.
 

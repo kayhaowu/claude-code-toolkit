@@ -176,7 +176,7 @@ if [ "$_install_recommended" = "1" ]; then
       else .hooks.Stop = ((.hooks.Stop // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/status-hook.sh idle"}]}])
       end
     | if ([(.hooks.PermissionRequest // [])[] | .hooks[]? | .command // ""] | any(test("hooks/status-hook"))) then .
-      else .hooks.PermissionRequest = ((.hooks.PermissionRequest // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/status-hook.sh waiting"}]}])
+      else .hooks.PermissionRequest = ((.hooks.PermissionRequest // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/status-hook.sh working"}]}])
       end'
 
     # notify-on-stop (Stop)

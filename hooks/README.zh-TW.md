@@ -104,8 +104,10 @@ Hooks 分為兩個層級：
 | 狀態 | 事件 | 說明 |
 |------|------|------|
 | `working` | UserPromptSubmit | Claude 正在處理使用者訊息 |
-| `waiting` | PermissionRequest | Claude 等待工具權限確認 |
+| `working` | PermissionRequest | Claude 正在執行工具 |
 | `idle` | Stop | Claude 完成回應 |
+
+`UserPromptSubmit` 和 `PermissionRequest` 都寫入 `working`，所以整個回覆期間（思考 + 工具執行 + 回覆）狀態都保持 WORKING，只有 `Stop` 才轉為 `idle`。
 
 寫入 `idle` 時，hook 會**保留上次 `working` 的 epoch**，讓 `notify-on-stop.sh` 能準確計算實際工作時間。
 
