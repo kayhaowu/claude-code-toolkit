@@ -78,6 +78,17 @@ else
     info "tmux already installed: $(tmux -V)"
 fi
 
+# Check tmux version for Catppuccin compatibility (requires 3.2+)
+_tmux_ver=$(tmux -V | sed 's/[^0-9.]//g')
+_tmux_major=$(echo "$_tmux_ver" | cut -d. -f1)
+_tmux_minor=$(echo "$_tmux_ver" | cut -d. -f2 | cut -d- -f1)
+_tmux_new_enough=1
+if [ "$_tmux_major" -lt 3 ] 2>/dev/null || { [ "$_tmux_major" -eq 3 ] && [ "${_tmux_minor:-0}" -lt 2 ]; }; then
+    _tmux_new_enough=0
+    warn "tmux $(tmux -V) is older than 3.2 — Catppuccin theme will be skipped."
+    warn "Upgrade tmux for full theme support. Toolkit will use basic colors."
+fi
+
 # ── Step 1c: Install Ghostty terminfo if needed ─────────────────────────────
 # Always install if missing — users may SSH from Ghostty later even if $TERM
 # is not xterm-ghostty during install (SSH can fallback to dumb/xterm).
@@ -174,21 +185,55 @@ TMUX_CONF_DIR="$HOME/.config/tmux"
 TPM_DIR="$TMUX_CONF_DIR/plugins/tpm"
 
 if [ -f "$TMUX_CONF" ]; then
-    # Deploy tmux.conf
     mkdir -p "$TMUX_CONF_DIR"
-    if [ -f "$TMUX_CONF_DIR/tmux.conf" ]; then
-        if diff -q "$TMUX_CONF_DIR/tmux.conf" "$TMUX_CONF" >/dev/null 2>&1; then
-            info "tmux.conf is already up-to-date."
-        else
+
+    if [ "$_tmux_new_enough" -eq 0 ]; then
+        # tmux < 3.2: deploy minimal config without Catppuccin
+        info "Deploying minimal tmux.conf (tmux < 3.2, no Catppuccin)..."
+        if [ -f "$TMUX_CONF_DIR/tmux.conf" ]; then
             _backup="$TMUX_CONF_DIR/tmux.conf.bak.$(date +%Y%m%d_%H%M%S)"
             cp "$TMUX_CONF_DIR/tmux.conf" "$_backup"
             warn "Existing tmux.conf backed up to $_backup"
-            cp "$TMUX_CONF" "$TMUX_CONF_DIR/tmux.conf"
-            success "tmux.conf updated."
         fi
+        cat > "$TMUX_CONF_DIR/tmux.conf" << 'MINCONF'
+# Minimal tmux.conf for tmux < 3.2 (no Catppuccin/TPM)
+set -g default-terminal "tmux-256color"
+set -ga terminal-overrides ",*:Tc"
+set -g mouse on
+set -g base-index 1
+set -g pane-base-index 1
+set -g status-position bottom
+set -g status-interval 5
+set -g status-style "bg=#1e1e2e,fg=#cdd6f4"
+set -g status-left "#[fg=#89b4fa,bold] #S "
+set -g status-right "#[fg=#6c7086]%H:%M "
+set -g message-style "bg=#313244,fg=#cdd6f4"
+set -g pane-border-style "fg=#313244"
+set -g pane-active-border-style "fg=#89b4fa"
+bind r source-file ~/.config/tmux/tmux.conf \; display "Reloaded"
+
+# Claude session monitor (if installed)
+if-shell '[ -f ~/.claude/tmux-sessions.sh ]' {
+    set -g status-right "#(sh ~/.claude/tmux-sessions.sh) #[fg=#6c7086]│ %H:%M "
+}
+MINCONF
+        success "Minimal tmux.conf deployed."
     else
-        cp "$TMUX_CONF" "$TMUX_CONF_DIR/tmux.conf"
-        success "tmux.conf deployed to $TMUX_CONF_DIR/tmux.conf"
+        # tmux >= 3.2: deploy full config with Catppuccin
+        if [ -f "$TMUX_CONF_DIR/tmux.conf" ]; then
+            if diff -q "$TMUX_CONF_DIR/tmux.conf" "$TMUX_CONF" >/dev/null 2>&1; then
+                info "tmux.conf is already up-to-date."
+            else
+                _backup="$TMUX_CONF_DIR/tmux.conf.bak.$(date +%Y%m%d_%H%M%S)"
+                cp "$TMUX_CONF_DIR/tmux.conf" "$_backup"
+                warn "Existing tmux.conf backed up to $_backup"
+                cp "$TMUX_CONF" "$TMUX_CONF_DIR/tmux.conf"
+                success "tmux.conf updated."
+            fi
+        else
+            cp "$TMUX_CONF" "$TMUX_CONF_DIR/tmux.conf"
+            success "tmux.conf deployed to $TMUX_CONF_DIR/tmux.conf"
+        fi
     fi
 
     # Symlink ~/.tmux -> ~/.config/tmux (for TPM compatibility)
@@ -199,27 +244,28 @@ if [ -f "$TMUX_CONF" ]; then
     fi
     ln -sf "$TMUX_CONF_DIR" "$HOME/.tmux"
 
-    # Install TPM
-    if [ ! -d "$TPM_DIR" ]; then
-        info "Installing TPM (Tmux Plugin Manager)..."
-        git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM_DIR"
-        success "TPM installed."
-    else
-        info "TPM already installed."
-    fi
-
-    # Install plugins
-    if [ -x "$TPM_DIR/bin/install_plugins" ]; then
-        info "Installing tmux plugins..."
-        "$TPM_DIR/bin/install_plugins" || warn "Plugin install had issues (continuing)"
-        # Fix catppuccin/dracula repo name collision
-        CATPPUCCIN_DIR="$TMUX_CONF_DIR/plugins/tmux"
-        if [ -f "$CATPPUCCIN_DIR/dracula.tmux" ]; then
-            warn "Detected Dracula instead of Catppuccin, fixing..."
-            rm -rf "$CATPPUCCIN_DIR"
-            git clone --depth 1 https://github.com/catppuccin/tmux.git "$CATPPUCCIN_DIR"
+    # Install TPM + plugins (only for tmux >= 3.2)
+    if [ "$_tmux_new_enough" -eq 1 ]; then
+        if [ ! -d "$TPM_DIR" ]; then
+            info "Installing TPM (Tmux Plugin Manager)..."
+            git clone --depth 1 https://github.com/tmux-plugins/tpm "$TPM_DIR"
+            success "TPM installed."
+        else
+            info "TPM already installed."
         fi
-        success "tmux plugins installed."
+
+        if [ -x "$TPM_DIR/bin/install_plugins" ]; then
+            info "Installing tmux plugins..."
+            "$TPM_DIR/bin/install_plugins" || warn "Plugin install had issues (continuing)"
+            # Fix catppuccin/dracula repo name collision
+            CATPPUCCIN_DIR="$TMUX_CONF_DIR/plugins/tmux"
+            if [ -f "$CATPPUCCIN_DIR/dracula.tmux" ]; then
+                warn "Detected Dracula instead of Catppuccin, fixing..."
+                rm -rf "$CATPPUCCIN_DIR"
+                git clone --depth 1 https://github.com/catppuccin/tmux.git "$CATPPUCCIN_DIR"
+            fi
+            success "tmux plugins installed."
+        fi
     fi
 fi
 
