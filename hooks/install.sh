@@ -165,6 +165,20 @@ if [ "$_install_recommended" = "1" ]; then
       else .hooks.PreToolUse = ((.hooks.PreToolUse // []) + [{"matcher":"Read|Edit|Write","hooks":[{"type":"command","command":"sh ~/.claude/hooks/sensitive-files.sh"}]}])
       end'
 
+    # status-hook (UserPromptSubmit + Stop + PermissionRequest)
+    # Must be installed before notify-on-stop; Stop ordering is enforced in Step 7.
+    # notify-on-stop depends on the .status file written by status-hook.
+    _jq_filter="$_jq_filter"'
+    | if ([(.hooks.UserPromptSubmit // [])[] | .hooks[]? | .command // ""] | any(test("hooks/status-hook"))) then .
+      else .hooks.UserPromptSubmit = ((.hooks.UserPromptSubmit // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/status-hook.sh working"}]}])
+      end
+    | if ([(.hooks.Stop // [])[] | .hooks[]? | .command // ""] | any(test("hooks/status-hook"))) then .
+      else .hooks.Stop = ((.hooks.Stop // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/status-hook.sh idle"}]}])
+      end
+    | if ([(.hooks.PermissionRequest // [])[] | .hooks[]? | .command // ""] | any(test("hooks/status-hook"))) then .
+      else .hooks.PermissionRequest = ((.hooks.PermissionRequest // []) + [{"hooks":[{"type":"command","command":"sh ~/.claude/hooks/status-hook.sh working"}]}])
+      end'
+
     # notify-on-stop (Stop)
     _jq_filter="$_jq_filter"'
     | if ([(.hooks.Stop // [])[] | .hooks[]? | .command // ""] | any(test("hooks/notify-on-stop"))) then .

@@ -11,6 +11,7 @@
 | `safety-guard.sh` | PreToolUse | 攔截危險指令（rm -rf /、force push、DROP TABLE）|
 | `sensitive-files.sh` | PreToolUse | 攔截存取 .env、credentials、*.key 等敏感檔案 |
 | `auto-format.sh` | PostToolUse | 編輯後自動格式化（prettier/black/gofmt/clang-format）|
+| `status-hook.sh` | UserPromptSubmit / Stop / PermissionRequest | 寫入 `.status` 檔供 dashboard 和 notify-on-stop 即時讀取 |
 | `notify-on-stop.sh` | Stop | Claude 完成時桌面/tmux 通知（30 秒門檻）|
 | `context-alert.sh` | Stop | Context 使用超過 80% 或 95% 時警告 |
 | `usage-logger.sh` | Session | 記錄 session 使用量至 `~/.claude/hooks/usage.jsonl` |
@@ -33,6 +34,7 @@ bash hooks/uninstall.sh
 Hooks 分為兩個層級：
 
 **建議開啟（預設啟用）：**
+- `status-hook.sh` — 即時寫入 session 狀態，供 dashboard 和 notify-on-stop 使用
 - `notify-on-stop.sh` — Claude 完成時桌面/tmux 通知
 - `safety-guard.sh` — 在執行前攔截破壞性指令
 - `sensitive-files.sh` — 攔截存取憑證檔案
@@ -92,6 +94,24 @@ Hooks 分為兩個層級：
 | `.sh`、`.bash` | `shfmt` | 內建 |
 | `.rb` | `rubocop -a` | 內建 |
 | `.java` | `google-java-format` | 內建 |
+
+### status-hook.sh
+
+在三個事件寫入 session 狀態至 `~/.claude/sessions/<pid>.status`。
+
+**格式：** `<status> <epoch>`
+
+| 狀態 | 事件 | 說明 |
+|------|------|------|
+| `working` | UserPromptSubmit | Claude 正在處理使用者訊息 |
+| `working` | PermissionRequest | Claude 正在執行工具 |
+| `idle` | Stop | Claude 完成回應 |
+
+`UserPromptSubmit` 和 `PermissionRequest` 都寫入 `working`，所以整個回覆期間（思考 + 工具執行 + 回覆）狀態都保持 WORKING，只有 `Stop` 才轉為 `idle`。
+
+寫入 `idle` 時，hook 會**保留上次 `working` 的 epoch**，讓 `notify-on-stop.sh` 能準確計算實際工作時間。
+
+`.status` 檔也供 dashboard（`statusline/dashboard.sh`）即時顯示狀態，無需輪詢 session JSON。
 
 ### notify-on-stop.sh
 
