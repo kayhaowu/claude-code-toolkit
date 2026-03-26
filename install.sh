@@ -79,8 +79,10 @@ else
 fi
 
 # ── Step 1c: Install Ghostty terminfo if needed ─────────────────────────────
-if [ "${TERM:-}" = "xterm-ghostty" ] || [ -n "${GHOSTTY_RESOURCES_DIR:-}" ]; then
-    if ! infocmp xterm-ghostty >/dev/null 2>&1; then
+# Always install if missing — users may SSH from Ghostty later even if $TERM
+# is not xterm-ghostty during install (SSH can fallback to dumb/xterm).
+if ! infocmp xterm-ghostty >/dev/null 2>&1; then
+    if command -v tic >/dev/null 2>&1; then
         info "Installing Ghostty terminfo..."
         _ghostty_tmpdir=$(mktemp -d)
         cat > "$_ghostty_tmpdir/ghostty.terminfo" << 'TERMINFO'
@@ -135,8 +137,10 @@ TERMINFO
             warn "Ghostty terminfo install failed (non-critical, run: TERM=xterm-256color tmux)"
         rm -rf "$_ghostty_tmpdir"
     else
-        info "Ghostty terminfo already installed."
+        info "Ghostty terminfo skipped (tic not found)."
     fi
+else
+    info "Ghostty terminfo already installed."
 fi
 
 # ── Step 2: Clone or update ───────────────────────────────────────────────────
