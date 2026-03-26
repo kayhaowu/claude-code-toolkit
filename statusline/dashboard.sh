@@ -190,7 +190,7 @@ trap 'printf "\n"; exit 0' INT TERM
 if command -v inotifywait > /dev/null 2>&1; then
     _REFRESH_MODE="inotify"
     render
-    while inotifywait -q -e modify,create,delete --include '\.(status|json)$' "$SESSIONS_DIR" 2>/dev/null; do
+    while inotifywait -q -e modify,create,delete --include '\.(status|json)$' "$SESSIONS_DIR" > /dev/null 2>/dev/null; do
         render
     done
     # inotifywait exited unexpectedly — fall back to polling
