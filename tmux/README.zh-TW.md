@@ -98,6 +98,7 @@ psmux 只會載入第一個找到的設定檔，順序為：`~/.psmux.conf`、`~
 - psmux 引號 bug：設定字串中的 `"` 會被存成 `\"`，導致 cmd.exe 指令失效。`#(...)` 裡不要使用雙引號。
 - `default-terminal` 設為 `xterm-256color`，因為 Git for Windows 的 ncurses 沒有 `tmux-256color`（Git Bash 的 vim 與 less 需要它）。
 - `escape-time` 設為 50 ms（tmux-sensible 為 0），這是 psmux 在 Windows 上的建議值。
+- 設定了 `allow-predictions on`：psmux 預設會在每個 pane 強制設定 PSReadLine `PredictionSource None`（在載入 profile 前後各一次），導致自動建議失效。已開啟的 pane 不會套用；要全部生效請執行 `tmux kill-server` 後重新啟動。
 - 移除 `MouseDragEnd1Pane` 綁定：psmux 放開滑鼠時會自動把拖曳選取的內容複製到 Windows 剪貼簿。
 - 移除 tmux-open 的 `C-o`（用 `$EDITOR` 開啟）。copy mode 中的 `o`（用 Windows 預設程式開啟）與 `S`（Google 搜尋）仍可使用。
 - Claude 監控列只在 `~/.claude/tmux-sessions.sh` 存在時出現，且需要 Git Bash 與 jq（`winget install jqlang.jq`）。它執行 `%LOCALAPPDATA%\Programs\Git\bin\bash.exe`，也就是 Git for Windows 的個人安裝路徑。若 Git 是全機安裝，請修改 `~/.psmux.conf` 中的 `status-format[1]` 那一行。路徑無法加引號（見上方引號 bug），請使用不含空白的路徑，例如短檔名 `C:\PROGRA~1\Git\bin\bash.exe`。

@@ -98,6 +98,7 @@ Differences and caveats compared with the Linux/macOS config:
 - psmux quoting bug: a `"` inside a config string is stored as `\"`, which breaks the cmd.exe command. Do not put double quotes inside `#(...)`.
 - `default-terminal` is `xterm-256color`, because Git for Windows' ncurses has no `tmux-256color` entry (vim and less from Git Bash need it).
 - `escape-time` is 50 ms instead of tmux-sensible's 0, as psmux recommends on Windows.
+- `allow-predictions on` is set because psmux otherwise forces PSReadLine `PredictionSource None` in every pane (before and after your profile loads), which turns off autosuggestions. Panes that were already open keep the old setting; run `tmux kill-server` and start again to apply it everywhere.
 - The `MouseDragEnd1Pane` binding is dropped: psmux copies a mouse drag to the Windows clipboard by itself.
 - tmux-open's `C-o` (open in `$EDITOR`) is dropped. `o` (open with the default Windows handler) and `S` (Google search) work in copy mode.
 - The Claude monitor line appears only when `~/.claude/tmux-sessions.sh` exists, and it needs Git Bash and jq (`winget install jqlang.jq`). It runs `%LOCALAPPDATA%\Programs\Git\bin\bash.exe`, the per-user Git for Windows path. With a machine-wide Git install, edit the `status-format[1]` line in `~/.psmux.conf`. The path cannot be quoted (see the quoting bug above), so use one without spaces, such as the short name `C:\PROGRA~1\Git\bin\bash.exe`.
