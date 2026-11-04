@@ -179,6 +179,8 @@ git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 
 See [`tmux/README.md`](tmux/README.md) for keybindings, plugins, and details.
 
+On Windows, a [psmux](https://github.com/psmux/psmux) port of this config installs with `powershell -ExecutionPolicy Bypass -File tmux\install.ps1`. See [`tmux/README.md`](tmux/README.md#windows-psmux).
+
 ## Hooks
 
 Ready-to-use hook scripts for Claude Code automation:
