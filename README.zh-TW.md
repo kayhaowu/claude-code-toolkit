@@ -179,6 +179,8 @@ git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 
 詳見 [`tmux/README.zh-TW.md`](tmux/README.zh-TW.md) 的快捷鍵、插件與詳細說明。
 
+Windows 上可使用此設定的 [psmux](https://github.com/psmux/psmux) 移植版，以 `powershell -ExecutionPolicy Bypass -File tmux\install.ps1` 安裝。詳見 [`tmux/README.zh-TW.md`](tmux/README.zh-TW.md#windows-psmux)。
+
 ## Hooks
 
 Claude Code 自動化 hook 腳本集合：
