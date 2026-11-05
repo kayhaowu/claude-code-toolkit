@@ -58,7 +58,7 @@ Installs tmux, git, TPM, all plugins, and Ghostty terminfo on the remote host. O
 - [psmux](https://github.com/psmux/psmux): `winget install marlocarlo.psmux`
 - PowerShell 7: `winget install Microsoft.PowerShell` (the config sets `default-shell pwsh`)
 - Git for Windows: `winget install Git.Git` (git branch in the status bar; Git Bash for the Claude monitor)
-- A Nerd Font: `winget install DEVCOM.JetBrainsMonoNerdFont`, then select it in your terminal
+- A Nerd Font **v3**: `winget install DEVCOM.JetBrainsMonoNerdFont`, then select it in your terminal (or let the installer do both, see below)
 
 ### Install
 
@@ -68,9 +68,16 @@ From the repo root:
 powershell -ExecutionPolicy Bypass -File tmux\install.ps1
 ```
 
+To set up a new machine in one go (install psmux, pwsh and the font, and select the font in Windows Terminal):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tmux\install.ps1 -InstallDeps -SetTerminalFont
+```
+
 The installer:
 
-- Checks for psmux, PowerShell 7 and a Nerd Font. If psmux or PowerShell 7 is missing it prints the `winget` command and exits; a missing Nerd Font is only a warning. Nothing is installed unless you pass `-InstallDeps`, which installs the missing ones with winget (`-FontPackage <winget id>` picks another font).
+- Checks for psmux, PowerShell 7, a Nerd Font, Git and Windows Terminal. If psmux or PowerShell 7 is missing it prints the `winget` command and exits; the others are only warnings. Nothing is installed unless you pass `-InstallDeps`, which tries each missing package once with winget (`-FontPackage <winget id>` picks another font). There is no elevation or other workaround: a failed install is reported with the manual command and the installer moves on. The one exception is the font: if the winget install fails, it falls back to the Nerd Fonts release archive (`-FontArchive JetBrainsMono -FontVersion v3.3.0`, about 6 MB) installed for the current user, without admin rights.
+- With `-SetTerminalFont`, sets `profiles.defaults.font.face` in Windows Terminal's `settings.json` to `-TerminalFont` (default `JetBrainsMono Nerd Font`), after backing the file up to `settings.json.bak-<yyyyMMdd-HHmmss>`. The file is rewritten by `ConvertTo-Json`, so its formatting changes; a `settings.json` with comments is left alone with a warning.
 - Copies the config and scripts (table below). An existing file with different content is backed up to `<name>.bak-<yyyyMMdd-HHmmss>` first; identical files are skipped, so re-running is safe.
 - Warns about other config files that psmux will ignore (see below).
 
@@ -100,6 +107,8 @@ Differences and caveats compared with the Linux/macOS config:
 - `escape-time` is 50 ms instead of tmux-sensible's 0, as psmux recommends on Windows.
 - `allow-predictions on` is set because psmux otherwise forces PSReadLine `PredictionSource None` in every pane (before and after your profile loads), which turns off autosuggestions. Panes that were already open keep the old setting; run `tmux kill-server` and start again to apply it everywhere.
 - The `MouseDragEnd1Pane` binding is dropped: psmux copies a mouse drag to the Windows clipboard by itself.
+- `mouse` is set `on` unconditionally and switched off only when `TERM_PROGRAM` is `vscode`. On a reload (`C-a r`) psmux 3.4.0 can evaluate every `if-shell` in the config as false, so an on/off pair would turn the mouse off.
+- `C-j` is passed through (not pane navigation) in kiro-cli panes, because kiro-cli uses `C-j` for a newline and `Shift+Enter` submits on Windows. psmux reports the deepest child process, so a kiro-cli pane shows as `node` and the match covers `kiro-cli|node|bun`. In those panes use `C-a ↓` to move down.
 - tmux-open's `C-o` (open in `$EDITOR`) is dropped. `o` (open with the default Windows handler) and `S` (Google search) work in copy mode.
 - The Claude monitor line appears only when `~/.claude/tmux-sessions.sh` exists, and it needs Git Bash and jq (`winget install jqlang.jq`). It runs `%LOCALAPPDATA%\Programs\Git\bin\bash.exe`, the per-user Git for Windows path. With a machine-wide Git install, edit the `status-format[1]` line in `~/.psmux.conf`. The path cannot be quoted (see the quoting bug above), so use one without spaces, such as the short name `C:\PROGRA~1\Git\bin\bash.exe`.
 - The sysinfo collector (`sysinfo.ps1`) starts from the config with `run-shell -b`. A named mutex keeps one instance per user, and it exits (deleting its cache file) within about 30 seconds after the last psmux session ends.
