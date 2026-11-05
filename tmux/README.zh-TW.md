@@ -76,7 +76,7 @@ powershell -ExecutionPolicy Bypass -File tmux\install.ps1 -InstallDeps -SetTermi
 
 安裝程式會：
 
-- 檢查 psmux、PowerShell 7 與 Nerd Font。缺少 psmux 或 PowerShell 7 時會印出 `winget` 指令並結束；缺少 Nerd Font 只會警告。除非加上 `-InstallDeps`，否則不會安裝任何軟體；加上後會用 winget 安裝缺少的項目（`-FontPackage <winget id>` 可指定其他字型）。winget 安裝字型失敗時，會改下載 Nerd Fonts 官方 release 壓縮檔（`-FontArchive JetBrainsMono -FontVersion v3.3.0`，約 6 MB），安裝給目前使用者，不需要系統管理員權限。
+- 檢查 psmux、PowerShell 7、Nerd Font、Git 與 Windows Terminal。缺少 psmux 或 PowerShell 7 時會印出 `winget` 指令並結束；其他項目只會警告。除非加上 `-InstallDeps`，否則不會安裝任何軟體；加上後會用 winget 對每個缺少的套件各試一次（`-FontPackage <winget id>` 可指定其他字型）。不會提權，也不會改用其他方式強制安裝：安裝失敗時會顯示手動安裝指令，然後繼續下一項。唯一的例外是字型：winget 安裝失敗時，會改下載 Nerd Fonts 官方 release 壓縮檔（`-FontArchive JetBrainsMono -FontVersion v3.3.0`，約 6 MB），安裝給目前使用者，不需要系統管理員權限。
 - 加上 `-SetTerminalFont` 時，會先把 Windows Terminal 的 `settings.json` 備份為 `settings.json.bak-<yyyyMMdd-HHmmss>`，再把 `profiles.defaults.font.face` 設為 `-TerminalFont`（預設 `JetBrainsMono Nerd Font`）。檔案由 `ConvertTo-Json` 重新寫出，排版會改變；含註解的 `settings.json` 不會被修改，只會顯示警告。
 - 複製設定檔與腳本（見下表）。目標檔案已存在且內容不同時，會先備份為 `<檔名>.bak-<yyyyMMdd-HHmmss>`；內容相同則略過，因此可重複執行。
 - 若有其他會被 psmux 忽略的設定檔，會顯示警告（見下方說明）。

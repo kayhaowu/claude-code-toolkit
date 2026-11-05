@@ -8,9 +8,10 @@
     is backed up to <name>.bak-<yyyyMMdd-HHmmss> before it is overwritten; identical
     files are left alone, so re-running is safe.
 
-    Checks for psmux, PowerShell 7 (pwsh) and a Nerd Font. Nothing is installed unless
-    -InstallDeps is given; without it, missing psmux/pwsh print the winget command and
-    the script exits with code 1.
+    Checks for psmux, PowerShell 7 (pwsh), a Nerd Font, Git and Windows Terminal. Nothing
+    is installed unless -InstallDeps is given. Each install is tried once with winget, with
+    no elevation or workarounds; a failure is reported and the script moves on. Missing
+    psmux/pwsh print the winget command and the script exits with code 1.
 
     Run with:
         powershell -ExecutionPolicy Bypass -File tmux\install.ps1
@@ -19,7 +20,7 @@
     Home directory to install into. Defaults to $env:USERPROFILE.
 
 .PARAMETER InstallDeps
-    Install missing psmux, PowerShell 7 and Nerd Font packages with winget.
+    Install missing psmux, PowerShell 7, Nerd Font, Git and Windows Terminal with winget.
 
 .PARAMETER FontPackage
     winget package id of the Nerd Font to install with -InstallDeps.
@@ -64,13 +65,30 @@ function Update-SessionPath {
 }
 
 function Invoke-Winget($id) {
+    # One attempt, no elevation or workarounds: on failure warn and let the caller carry on.
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        throw "winget not found; install '$id' manually."
+        Write-Warn "winget not found; install '$id' manually."
+        return $false
     }
     Write-Info "winget install --id $id -e"
-    & winget install --id $id -e --accept-source-agreements --accept-package-agreements
-    if ($LASTEXITCODE -ne 0) { throw "winget install $id failed (exit $LASTEXITCODE)." }
+    # Out-Host keeps winget's output out of the return value.
+    & winget install --id $id -e --accept-source-agreements --accept-package-agreements | Out-Host
+    $code = $LASTEXITCODE
     Update-SessionPath
+    if ($code -ne 0) {
+        Write-Warn "winget install $id failed (exit $code); install it manually if you need it."
+        return $false
+    }
+    return $true
+}
+
+function Test-WindowsTerminal {
+    if (Get-Command wt -ErrorAction SilentlyContinue) { return $true }
+    try {
+        return [bool](Get-AppxPackage -Name 'Microsoft.WindowsTerminal*' -ErrorAction SilentlyContinue)
+    } catch {
+        return $false
+    }
 }
 
 function Test-NerdFont {
@@ -220,11 +238,14 @@ foreach ($dep in $required) {
     if (Get-Command $dep.Command -ErrorAction SilentlyContinue) {
         Write-Ok $dep.Name
     } elseif ($InstallDeps) {
-        Invoke-Winget $dep.Package
+        $ok = Invoke-Winget $dep.Package
         if (Get-Command $dep.Command -ErrorAction SilentlyContinue) {
             Write-Ok "$($dep.Name) installed"
-        } else {
+        } elseif ($ok) {
             Write-Warn "$($dep.Name) installed but not on PATH yet; open a new terminal."
+        } else {
+            Write-Fail "$($dep.Name): winget install $($dep.Package)"
+            $missing += $dep
         }
     } else {
         Write-Fail "$($dep.Name): winget install $($dep.Package)"
@@ -236,13 +257,16 @@ $fontMissing = $false
 if (Test-NerdFont) {
     Write-Ok 'Nerd Font'
 } elseif ($InstallDeps) {
-    try {
-        Invoke-Winget $FontPackage
+    if (Invoke-Winget $FontPackage) {
         Write-Ok "Nerd Font installed ($FontPackage)"
-    } catch {
-        Write-Warn "$($_.Exception.Message) Falling back to the Nerd Fonts release archive."
-        Install-NerdFontArchive $FontArchive $FontVersion
-        Write-Ok "Nerd Font installed for the current user ($FontArchive $FontVersion)"
+    } else {
+        Write-Info 'Falling back to the Nerd Fonts release archive (current user, no admin rights).'
+        try {
+            Install-NerdFontArchive $FontArchive $FontVersion
+            Write-Ok "Nerd Font installed for the current user ($FontArchive $FontVersion)"
+        } catch {
+            Write-Warn "Nerd Font not installed ($($_.Exception.Message)); status icons will not render."
+        }
     }
     $fontMissing = $true
 } else {
@@ -252,8 +276,18 @@ if (Test-NerdFont) {
 
 if (Get-Command git -ErrorAction SilentlyContinue) {
     Write-Ok 'git'
+} elseif ($InstallDeps -and (Invoke-Winget 'Git.Git') -and (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Ok 'git installed'
 } else {
     Write-Warn 'Git for Windows not found (git branch and Claude monitor need it): winget install Git.Git'
+}
+
+if (Test-WindowsTerminal) {
+    Write-Ok 'Windows Terminal'
+} elseif ($InstallDeps -and (Invoke-Winget 'Microsoft.WindowsTerminal')) {
+    Write-Ok 'Windows Terminal installed (start it once before using -SetTerminalFont)'
+} else {
+    Write-Warn 'Windows Terminal not found (any terminal with a Nerd Font works): winget install Microsoft.WindowsTerminal'
 }
 
 $claudeScript = Join-Path $TargetHome '.claude\tmux-sessions.sh'
@@ -269,7 +303,11 @@ if (Test-Path -LiteralPath $claudeScript) {
 
 if ($missing.Count -gt 0) {
     Write-Host ''
-    Write-Host 'Install the missing packages above, or re-run with -InstallDeps to install them with winget.'
+    if ($InstallDeps) {
+        Write-Host 'psmux and PowerShell 7 are required; install the missing ones above manually, then re-run.'
+    } else {
+        Write-Host 'Install the missing packages above, or re-run with -InstallDeps to install them with winget.'
+    }
     exit 1
 }
 
