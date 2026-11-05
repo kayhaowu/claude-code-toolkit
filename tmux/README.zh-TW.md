@@ -58,7 +58,7 @@ bash tmux/deploy.sh user@host [ssh-options]
 - [psmux](https://github.com/psmux/psmux)：`winget install marlocarlo.psmux`
 - PowerShell 7：`winget install Microsoft.PowerShell`（設定檔使用 `default-shell pwsh`）
 - Git for Windows：`winget install Git.Git`（狀態列的 git 分支；Claude 監控需要 Git Bash）
-- Nerd Font：`winget install DEVCOM.JetBrainsMonoNerdFont`，並在終端機設定中選用
+- Nerd Font **v3**：`winget install DEVCOM.JetBrainsMonoNerdFont`，並在終端機設定中選用（也可以交給安裝程式處理，見下方）
 
 ### 安裝
 
@@ -68,9 +68,16 @@ bash tmux/deploy.sh user@host [ssh-options]
 powershell -ExecutionPolicy Bypass -File tmux\install.ps1
 ```
 
+新電腦一次設定完成（安裝 psmux、pwsh 與字型，並在 Windows Terminal 選用該字型）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tmux\install.ps1 -InstallDeps -SetTerminalFont
+```
+
 安裝程式會：
 
-- 檢查 psmux、PowerShell 7 與 Nerd Font。缺少 psmux 或 PowerShell 7 時會印出 `winget` 指令並結束；缺少 Nerd Font 只會警告。除非加上 `-InstallDeps`，否則不會安裝任何軟體；加上後會用 winget 安裝缺少的項目（`-FontPackage <winget id>` 可指定其他字型）。
+- 檢查 psmux、PowerShell 7 與 Nerd Font。缺少 psmux 或 PowerShell 7 時會印出 `winget` 指令並結束；缺少 Nerd Font 只會警告。除非加上 `-InstallDeps`，否則不會安裝任何軟體；加上後會用 winget 安裝缺少的項目（`-FontPackage <winget id>` 可指定其他字型）。winget 安裝字型失敗時，會改下載 Nerd Fonts 官方 release 壓縮檔（`-FontArchive JetBrainsMono -FontVersion v3.3.0`，約 6 MB），安裝給目前使用者，不需要系統管理員權限。
+- 加上 `-SetTerminalFont` 時，會先把 Windows Terminal 的 `settings.json` 備份為 `settings.json.bak-<yyyyMMdd-HHmmss>`，再把 `profiles.defaults.font.face` 設為 `-TerminalFont`（預設 `JetBrainsMono Nerd Font`）。檔案由 `ConvertTo-Json` 重新寫出，排版會改變；含註解的 `settings.json` 不會被修改，只會顯示警告。
 - 複製設定檔與腳本（見下表）。目標檔案已存在且內容不同時，會先備份為 `<檔名>.bak-<yyyyMMdd-HHmmss>`；內容相同則略過，因此可重複執行。
 - 若有其他會被 psmux 忽略的設定檔，會顯示警告（見下方說明）。
 
@@ -100,6 +107,8 @@ psmux 只會載入第一個找到的設定檔，順序為：`~/.psmux.conf`、`~
 - `escape-time` 設為 50 ms（tmux-sensible 為 0），這是 psmux 在 Windows 上的建議值。
 - 設定了 `allow-predictions on`：psmux 預設會在每個 pane 強制設定 PSReadLine `PredictionSource None`（在載入 profile 前後各一次），導致自動建議失效。已開啟的 pane 不會套用；要全部生效請執行 `tmux kill-server` 後重新啟動。
 - 移除 `MouseDragEnd1Pane` 綁定：psmux 放開滑鼠時會自動把拖曳選取的內容複製到 Windows 剪貼簿。
+- `mouse` 一律先設為 `on`，只有 `TERM_PROGRAM` 為 `vscode` 時才關閉。psmux 3.4.0 重載設定（`C-a r`）時可能把設定檔裡所有 `if-shell` 都判為 false，若寫成 on/off 二選一，滑鼠會被關掉。
+- 在 kiro-cli 的 pane 中，`C-j` 會直接送給程式（不切換窗格），因為 kiro-cli 用 `C-j` 換行，而 Windows 上 `Shift+Enter` 會直接送出。psmux 回報的是最底層的子程序，kiro-cli pane 會顯示為 `node`，所以比對條件是 `kiro-cli|node|bun`。在這些 pane 中請用 `C-a ↓` 往下切換。
 - 移除 tmux-open 的 `C-o`（用 `$EDITOR` 開啟）。copy mode 中的 `o`（用 Windows 預設程式開啟）與 `S`（Google 搜尋）仍可使用。
 - Claude 監控列只在 `~/.claude/tmux-sessions.sh` 存在時出現，且需要 Git Bash 與 jq（`winget install jqlang.jq`）。它執行 `%LOCALAPPDATA%\Programs\Git\bin\bash.exe`，也就是 Git for Windows 的個人安裝路徑。若 Git 是全機安裝，請修改 `~/.psmux.conf` 中的 `status-format[1]` 那一行。路徑無法加引號（見上方引號 bug），請使用不含空白的路徑，例如短檔名 `C:\PROGRA~1\Git\bin\bash.exe`。
 - sysinfo 收集器（`sysinfo.ps1`）由設定檔以 `run-shell -b` 啟動。named mutex 確保每個使用者只有一個實例；最後一個 psmux session 結束後約 30 秒內會自行結束並刪除快取檔。

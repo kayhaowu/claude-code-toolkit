@@ -23,12 +23,31 @@
 
 .PARAMETER FontPackage
     winget package id of the Nerd Font to install with -InstallDeps.
+
+.PARAMETER FontArchive
+    Nerd Fonts release archive (<name>.tar.xz) installed for the current user when the
+    winget font install fails. Default JetBrainsMono.
+
+.PARAMETER FontVersion
+    Nerd Fonts release tag for -FontArchive. Default v3.3.0 (v3 is required: the status
+    line uses Material Design icons from the v3 code points).
+
+.PARAMETER SetTerminalFont
+    Set profiles.defaults.font.face in Windows Terminal's settings.json to -TerminalFont.
+    The file is backed up to settings.json.bak-<yyyyMMdd-HHmmss> before it is changed.
+
+.PARAMETER TerminalFont
+    Font face for -SetTerminalFont. Default 'JetBrainsMono Nerd Font'.
 #>
 [CmdletBinding()]
 param(
     [string]$TargetHome = $env:USERPROFILE,
     [switch]$InstallDeps,
-    [string]$FontPackage = 'DEVCOM.JetBrainsMonoNerdFont'
+    [string]$FontPackage = 'DEVCOM.JetBrainsMonoNerdFont',
+    [string]$FontArchive = 'JetBrainsMono',
+    [string]$FontVersion = 'v3.3.0',
+    [switch]$SetTerminalFont,
+    [string]$TerminalFont = 'JetBrainsMono Nerd Font'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -69,6 +88,95 @@ function Test-NerdFont {
         }
     }
     return $false
+}
+
+function Install-NerdFontArchive($name, $version) {
+    if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
+        throw 'tar.exe not found (it ships with Windows 10 1803 and later).'
+    }
+    $url = "https://github.com/ryanoasis/nerd-fonts/releases/download/$version/$name.tar.xz"
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) "nerdfont-$name-$version"
+    New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+    $archive = Join-Path $tmp "$name.tar.xz"
+    Write-Info "download $url"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    $oldProgress = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'  # the progress bar makes Invoke-WebRequest very slow on 5.1
+    try { Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing } finally { $ProgressPreference = $oldProgress }
+    & tar -xf $archive -C $tmp
+    if ($LASTEXITCODE -ne 0) { throw "tar could not extract $archive (exit $LASTEXITCODE)." }
+
+    # <Name>NerdFont-<Style>.ttf only; the NerdFontMono/NerdFontPropo variants and other
+    # families in the archive (e.g. JetBrainsMonoNL) are not needed. Some archives use a
+    # different file prefix (CascadiaCode -> CaskaydiaCove), hence the generic fallback.
+    $fonts = @(Get-ChildItem -LiteralPath $tmp -Filter "${name}NerdFont-*.ttf" -File)
+    if ($fonts.Count -eq 0) { $fonts = @(Get-ChildItem -LiteralPath $tmp -Filter '*NerdFont-*.ttf' -File) }
+    if ($fonts.Count -eq 0) { throw "No *NerdFont-*.ttf files in $archive." }
+    $dst = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+    New-Item -ItemType Directory -Force -Path $dst | Out-Null
+    $reg = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+    if (-not (Test-Path -LiteralPath $reg)) { New-Item -Path $reg -Force | Out-Null }
+    if (-not ('FontApi' -as [type])) {
+        Add-Type -Name FontApi -Namespace '' -MemberDefinition '[DllImport("gdi32.dll", CharSet = CharSet.Unicode)] public static extern int AddFontResourceW(string file);'
+    }
+    foreach ($f in $fonts) {
+        $target = Join-Path $dst $f.Name
+        # An installed font may be locked by a running app; skip files that are already there.
+        if (-not (Test-Path -LiteralPath $target) -or (Get-Item -LiteralPath $target).Length -ne $f.Length) {
+            Copy-Item -LiteralPath $f.FullName -Destination $target -Force
+        }
+        $valueName = ($f.BaseName -replace 'NerdFont-', ' Nerd Font ') + ' (TrueType)'
+        Set-ItemProperty -Path $reg -Name $valueName -Value $target
+        # Makes the font usable in this logon session without signing out.
+        [void][FontApi]::AddFontResourceW($target)
+    }
+    Write-Info "$($fonts.Count) font files installed to $dst"
+}
+
+function Set-TerminalFont($face, $stamp) {
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
+        (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json'),
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\settings.json')
+    )
+    $paths = @($candidates | Where-Object { Test-Path -LiteralPath $_ })
+    if ($paths.Count -eq 0) {
+        Write-Warn "Windows Terminal settings.json not found (start Windows Terminal once first); select '$face' in your terminal by hand."
+        return
+    }
+    $utf8 = New-Object Text.UTF8Encoding($false)
+    foreach ($p in $paths) {
+        try {
+            $json = [IO.File]::ReadAllText($p, $utf8) | ConvertFrom-Json
+        } catch {
+            Write-Warn "$p could not be parsed (comments are not supported here); set profiles.defaults.font.face to '$face' by hand."
+            continue
+        }
+        $profiles = $json.profiles
+        if (-not $profiles -or $profiles -is [array]) {
+            Write-Warn "$p has no profiles.defaults section; set the font to '$face' in Windows Terminal by hand."
+            continue
+        }
+        if (-not $profiles.PSObject.Properties['defaults']) { $profiles | Add-Member -NotePropertyName defaults -NotePropertyValue ([pscustomobject]@{}) }
+        $defaults = $profiles.defaults
+        if (-not $defaults.PSObject.Properties['font']) { $defaults | Add-Member -NotePropertyName font -NotePropertyValue ([pscustomobject]@{}) }
+        $font = $defaults.font
+        foreach ($prof in @($profiles.list)) {
+            if ($prof -and $prof.PSObject.Properties['font'] -and $prof.font.PSObject.Properties['face'] -and $prof.font.face -ne $face) {
+                Write-Warn "Profile '$($prof.name)' sets its own font ($($prof.font.face)), which overrides the default."
+            }
+        }
+        if ($font.PSObject.Properties['face'] -and $font.face -eq $face) {
+            Write-Ok "$p (font already $face)"
+            continue
+        }
+        $backup = "$p.bak-$stamp"
+        Copy-Item -LiteralPath $p -Destination $backup -Force
+        Write-Info "backup: $backup"
+        if ($font.PSObject.Properties['face']) { $font.face = $face } else { $font | Add-Member -NotePropertyName face -NotePropertyValue $face }
+        [IO.File]::WriteAllText($p, ($json | ConvertTo-Json -Depth 100), $utf8)
+        Write-Ok "$p (profiles.defaults.font.face = $face)"
+    }
 }
 
 function Install-File($src, $dst, $stamp) {
@@ -128,8 +236,14 @@ $fontMissing = $false
 if (Test-NerdFont) {
     Write-Ok 'Nerd Font'
 } elseif ($InstallDeps) {
-    Invoke-Winget $FontPackage
-    Write-Ok "Nerd Font installed ($FontPackage)"
+    try {
+        Invoke-Winget $FontPackage
+        Write-Ok "Nerd Font installed ($FontPackage)"
+    } catch {
+        Write-Warn "$($_.Exception.Message) Falling back to the Nerd Fonts release archive."
+        Install-NerdFontArchive $FontArchive $FontVersion
+        Write-Ok "Nerd Font installed for the current user ($FontArchive $FontVersion)"
+    }
     $fontMissing = $true
 } else {
     Write-Warn "No Nerd Font detected (status icons need one): winget install $FontPackage"
@@ -182,11 +296,19 @@ if ($env:PSMUX_CONFIG_FILE) {
     Write-Warn "PSMUX_CONFIG_FILE=$env:PSMUX_CONFIG_FILE overrides ~/.psmux.conf; unset it to use this config."
 }
 
+if ($SetTerminalFont) {
+    Write-Host ''
+    Write-Host 'Windows Terminal font'
+    Set-TerminalFont $TerminalFont $stamp
+}
+
 # -- Next steps --------------------------------------------------------------
 Write-Host ''
 Write-Host 'Next steps:'
 Write-Info '1. Open a new terminal (so PATH and fonts are picked up).'
-if ($fontMissing) {
+if ($SetTerminalFont) {
+    Write-Info "2. Close every Windows Terminal window and reopen it to load '$TerminalFont'."
+} elseif ($fontMissing) {
     Write-Info '2. Select the Nerd Font (e.g. "JetBrainsMono Nerd Font") in your terminal settings.'
 } else {
     Write-Info '2. Make sure your terminal uses a Nerd Font.'
